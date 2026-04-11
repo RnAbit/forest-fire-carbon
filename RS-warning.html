@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>森林碳管家</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+        }
+        
+        body {
+            /* background: linear-gradient(rgba(255, 252, 252, 1), rgba(255, 255, 255, 1)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23222"/><path d="M0,50 Q20,30 50,50 T100,50" fill="none" stroke="%23333" stroke-width="2"/><path d="M0,70 Q20,50 50,70 T100,70" fill="none" stroke="%23333" stroke-width="2"/><path d="M0,30 Q20,10 50,30 T100,30" fill="none" stroke="%23333" stroke-width="2"/></svg>'); */
+            background: linear-gradient(rgba(255, 252, 252, 1), rgba(255, 255, 255, 1));
+            background-size: cover;
+            color: #f0f0f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+
+        }
+        
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            /* background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><filter id="turbulence" x="0" y="0"><feTurbulence baseFrequency="0.02" numOctaves="3" seed="1"/><feDisplacementMap in="SourceGraphic" scale="5"/></filter><circle cx="100" cy="100" r="80" fill="%23333" filter="url(%23turbulence)"/></svg>'); */
+            opacity: 0.1;
+            pointer-events: none;
+        }
+        h2
+        {
+            color: #151414;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-bottom: 1px solid #444;
+        }
+        
+        .satellite-selector {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        select, .nav-button {
+            background-color: #fcf5f5;
+            color: #151414;
+            border: 1px solid #323131;
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-size: 21px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        select:hover, .nav-button:hover {
+            background-color: #444;
+            border-color: #666;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+         .hero-section {
+            text-align: center;
+            padding: 60px 20px 40px;
+            background-image: url('https://framerusercontent.com/images/bTMSexi2Omo0t6jRo9JhFgcyk.jpg');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            position: relative;
+            border-radius: 0 0 12px 12px;
+            overflow: hidden;
+        }
+        
+        .hero-section::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.5));
+            z-index: 0;
+        }
+        
+        .hero-section {
+            text-align: center;
+            padding: 60px 20px 40px;
+            background-image: url('https://framerusercontent.com/images/bTMSexi2Omo0t6jRo9JhFgcyk.jpg');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            position: relative;
+            border-radius: 0 0 12px 12px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        
+        .hero-section::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.5));
+            z-index: 0;
+        }
+        
+        .hero-section > * {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .main-title {
+            font-size: 10em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 2em;
+            margin-bottom: 40px;
+            color: #ccc;
+            font-weight: 700;
+        }
+        
+        .main-nav {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-bottom: 50px;
+        }
+        
+        .nav-item {
+            padding: 10px 20px;
+            font-size: 1.5em;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.3s;
+        }
+        
+        .nav-item:hover {
+            color: #fff;
+        }
+        
+        .nav-item.active {
+            color: #fff;
+            font-weight: bold;
+        }
+        
+        .nav-item.active::after {
+            content: "";
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #fff;
+        }
+        
+        .content-section {
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto 100px;
+            padding: 0 20px;
+            gap: 60px;
+        }
+        
+        .text-content {
+            flex: 1;
+            background-color: rgba(255, 254, 254, 1);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+        }
+        
+        .section-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #555;
+        }
+        
+        .description {
+            line-height: 1.6;
+            color: #474646;
+        }
+        
+        .earth-visualization {
+            flex: 1;
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            min-height: 300px;
+            margin: 0 30px;
+        }
+        
+        .earth-visualization video {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            display: block;
+            object-fit: cover;
+            background-color: rgba(0, 0, 0, 0);
+            object-position: 50% 50%;
+        }
+        
+        .footer-nav {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            padding: 20px;
+            background-color: rgba(20, 20, 20, 0.7);
+            border-top: 1px solid #444;
+        }
+        
+       /* 手机适配 - 媒体查询 */
+       @media (max-width: 768px) {
+        .header {
+            padding: 10px 15px;
+            gap: 10px;
+        }
+        .diagram
+        {
+            width: 100%;   
+            max-width: 800px; 
+            height: 300px;
+            flex: 3; 
+        }
+        .satellite-selector {
+            width: 100%;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        
+        select {
+            flex-grow: 1;
+            max-width: 150px;
+            font-size: 10px;
+        }
+        
+        .nav-buttons {
+            width: 100%;
+            justify-content: flex-end;
+        }
+        
+        .nav-button {
+            padding: 8px 10px;
+            font-size: 12px;
+        }
+        
+        .hero-section {
+            padding: 30px 15px;
+        }
+        
+        .main-title {
+            font-size: 3rem;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+        
+        .main-nav {
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .nav-item {
+            font-size: 10px;
+            padding: 8px 12px;
+        }
+        
+        .content-section {
+            /* flex-direction: column; */
+            margin-bottom: 30px;
+            gap: 20px;
+            padding: 0 15px;
+        }
+        
+        .text-content {
+            padding: 15px;
+            /* width: 30%; */
+        }
+
+        .earth-visualization {
+            margin: 0;
+            min-height: 200px;
+        }
+        
+        .section-title {
+            font-size: 1rem;
+        }
+        
+        .description {
+            font-size: 10px;
+        }
+    }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="satellite-selector">
+            <select id="satellite-select">
+                <option value="himawari">Himawari-8</option>
+                <option value="modis">MODIS</option>
+                <option value="viire">VIIRE</option>
+            </select>
+            <div class="nav-buttons">
+                <button class="nav-button" onclick="window.location.href='platform_K.html'">地图</button>
+                <button class="nav-button">操作</button>
+                <button class="nav-button">了解</button>
+                <button class="nav-button">帮助</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="hero-section">
+        <h1 class="main-title">星火智眸</h1>
+        <p class="subtitle">基于多源卫星的火灾遥感监测与燃烧排放追踪系统</p>
+        
+        <div class="main-nav">
+            <div class="nav-item active" id="system-introduction">系统简介</div>
+            <div class="nav-item" id="forest-changes">森林变化</div>
+            <div class="nav-item"  id="fire-analysis">火灾碳排放</div>
+            <div class="nav-item" id="C-accounting">碳达标核算</div>
+        </div>
+    </div>
+
+    <div id="content-section1" class="content-section">
+        <div class="text-content">
+            <h2 class="section-title">多源卫星遥感监测</h2>
+            <p class="description">
+                @pixelbeat<br>
+                "星火智眸"创新性融合MODIS、Himawari-8等多源卫星数据，采用自上而下的方式，构建空天地协同系统。MODIS卫星每日1km分辨率全覆盖，36个光谱波段从可见光到热红外区间扫描全球森林;Himawari-8卫星凭借热红外数据10分钟级高频刷新，多源卫星数据融合优势互补，大幅提升监测时效性与精准度。
+            </p>
+        </div>
+        
+        <div class="earth-visualization">
+            <video src="https://framerusercontent.com/assets/TFe4nPiDP1UtxnsIKW1bN5N5Qk.mp4" loop preload="auto" playsinline autoplay></video>
+        </div>
+    </div>
+
+    <div id="content-section2" class="content-section">
+        <div class="earth-visualization">
+            <video src="https://framerusercontent.com/assets/KN4OLVngCQOTf2aAWiFAL8VGto.mp4" loop preload="auto" playsinline autoplay></video>
+        </div>
+        <div class="text-content">
+            <h2 class="section-title">火情精准监测与排放核算</h2>
+            <p class="description">
+                @pixelbeat<br>
+                基于辐射传输理论与机器学习模型的燃烧强度反演算法，结合森林植被、地形地貌等因素，精准反演火点辐射能量值，进而推算火灾燃烧强度、进程与规模。同时构建多尺度排放因子库，能实时、精准核算 CO₂、PM2.5 等森林火灾相关污染物排放量，达国际碳监测计划（ICOS）标准。            </p>
+        </div>
+    </div>
+
+    <div id="content-section3" class="content-section">
+        
+        <div class="text-content">
+            <h2 class="section-title">多领域高效应用</h2>
+            <p class="description">
+                @pixelbeat<br>
+                aaaaaaaa为森林管理部门、消防局等提供有力监测支持。卫星可快速发现火情，将火情发现时间缩短至 30 分钟以内，为快速灭火争取宝贵时间。还能凭借高精度碳排放核算能力，助力相关部门了解碳排放现状，制定合理碳中和策略，在环保、生态资源管理等领域效益显著            </p>
+        </div>
+
+        <div class="earth-visualization">
+            <video src="https://framerusercontent.com/assets/uwex5f1OGhFLr9swGLVzh3zsyHk.mp4" loop preload="auto" playsinline autoplay></video>
+        </div>
+    </div>
+
+    <!-- <div class="footer-nav">
+        <div class="nav-item">系统简介</div>
+        <div class="nav-item">遥感预警</div>
+        <div class="nav-item">森林变化</div>
+        <div class="nav-item">火情分析</div>
+        <div class="nav-item">碳达标核算</div>
+    </div> -->
+
+    <script>
+        // 导航项点击事件
+        const navItems = document.querySelectorAll('.nav-item');
+        const fireAnalysis = document.getElementById('fire-analysis');
+        // const RSWarning = document.getElementById('RS-warning');
+        const forestChanges = document.getElementById('forest-changes');
+        const systemIntroduction = document.getElementById('system-introduction');
+        const CAccounting = document.getElementById('C-accounting');
+        navItems.forEach(i => i.classList.remove('active'));
+        RSWarning.classList.add('active');
+
+        // 火情分析点击事件
+            fireAnalysis.addEventListener('click', function() {
+            navItems.forEach(i => i.classList.remove('active'));
+            // this.classList.add('active');
+            window.location.href = 'fire-analysis.html';
+        });
+        
+        // 系统简介点击事件
+            systemIntroduction.addEventListener('click', function() {
+            navItems.forEach(i => i.classList.remove('active'));
+            // this.classList.add('active');
+            window.location.href = 'index.html';
+        });
+
+        // 遥感预警点击事件
+            RSWarning.addEventListener('click', function() {
+            navItems.forEach(i => i.classList.remove('active'));
+            // this.classList.add('active');
+            window.location.href = 'RS-warning.html';
+        });
+
+        // 森林变化点击事件
+            forestChanges.addEventListener('click', function() {
+            navItems.forEach(i => i.classList.remove('active'));
+            // this.classList.add('active');
+            window.location.href = 'forest-changes.html';
+        });
+
+        // 碳核算点击事件
+            CAccounting.addEventListener('click', function() {
+            navItems.forEach(i => i.classList.remove('active'));
+            // this.classList.add('active');
+            window.location.href = 'C-accounting.html';
+        });
+
+    </script>
+</body>
+</html>

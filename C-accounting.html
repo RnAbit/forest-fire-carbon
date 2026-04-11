@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>碳汇损失核算 | 林火碳卫士</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-green: #2d6a4f;
+            --accent-blue: #0077b6;
+            --bg-light: #f8fafc;
+            --panel-white: #ffffff;
+            --text-dark: #1e293b;
+        }
+        
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: "Microsoft YaHei", sans-serif; 
+        }
+        
+        body { 
+            background-color: var(--bg-light); 
+            color: var(--text-dark); 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        .navbar {
+            height: 64px; 
+            background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between;
+            padding: 0 32px; 
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(45,106,79,0.08); 
+            flex-shrink: 0;
+        }
+        
+        .nav-brand { 
+            font-size: 16px; 
+            font-weight: 600; 
+            color: var(--primary-green); 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            letter-spacing: 0.02em; 
+        }
+        
+        .nav-menu { 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+        }
+        
+        .nav-item {
+            padding: 10px 18px; 
+            border-radius: 10px; 
+            font-size: 14px; 
+            font-weight: 500;
+            transition: all 0.25s ease; 
+            color: #64748b; 
+            text-decoration: none; 
+            border: 1px solid transparent;
+        }
+        
+        .nav-item:hover { 
+            background: rgba(45,106,79,0.08); 
+            color: var(--primary-green); 
+        }
+        
+        .nav-item.active { 
+            background: linear-gradient(135deg, var(--primary-green) 0%, #1b4332 100%); 
+            color: white; 
+            box-shadow: 0 2px 8px rgba(45,106,79,0.3); 
+        }
+
+        .main { 
+            flex: 1; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 32px 24px; 
+            width: 100%; 
+        }
+        
+        .page-title { 
+            font-size: 24px; 
+            font-weight: 600; 
+            color: var(--primary-green); 
+            margin-bottom: 28px; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+
+        .card {
+            background: var(--panel-white); 
+            border-radius: 14px; 
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04); 
+            margin-bottom: 28px; 
+            overflow: hidden;
+        }
+        
+        .card-header {
+            padding: 16px 22px; 
+            background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 100%);
+            border-bottom: 1px solid #e2e8f0; 
+            font-size: 16px; 
+            font-weight: 600; 
+            color: var(--primary-green);
+        }
+        
+        .card-body { 
+            padding: 24px; 
+        }
+
+        .section-title { 
+            font-size: 17px; 
+            margin-bottom: 12px; 
+            color: var(--text-dark); 
+            border-bottom: 2px solid var(--primary-green); 
+            padding-bottom: 8px; 
+            display: inline-block; 
+        }
+
+        .description { 
+            line-height: 1.75; 
+            color: #475569; 
+            font-size: 14px; 
+            margin-bottom: 20px; 
+        }
+
+        .img-wrap {
+            width: 80%;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .img-wrap img {
+            display: block;
+            margin: 0 auto;
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .npp-row {
+            display: flex;
+            flex-direction: row;
+            gap: 32px;
+            align-items: flex-start;
+        }
+        .npp-col-text {
+            flex: 1 1 0;
+            min-width: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            max-width: 33.33%;
+        }
+        .npp-col-img {
+            flex: 2 1 0;
+            min-width: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            max-width: 66.66%;
+        }
+        @media (max-width: 768px) {
+            .npp-row {
+                flex-direction: column;
+            }
+            .nav-brand { font-size: 14px; }
+            .nav-menu { gap: 8px; }
+            .nav-item { padding: 6px 12px; font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand"><i class="fas fa-leaf"></i> 林火碳卫士—基于VIIRS卫星高精度森林火灾碳排放实时核算与预警系统</div>
+        <div class="nav-menu">
+            <a href="platform_K.html" class="nav-item">火情监测</a>
+            <!--<a href="carbon-trade.html" class="nav-item">减排协同</a>-->
+            <a href="fire-analysis.html" class="nav-item">火灾碳排分析</a>
+            <a href="forest-changes.html" class="nav-item">森林变化</a>
+            <a href="C-accounting.html" class="nav-item active">碳汇损失核算</a>
+            <a href="about.html" class="nav-item">项目简介</a>
+        </div>
+    </nav>
+
+    <main class="main">
+        <h1 class="page-title"><i class="fas fa-calculator"></i> 碳汇损失核算</h1>
+
+        <div class="card">
+            <div class="card-header">NPP变化趋势</div>
+            <div class="card-body">
+                <div class="npp-row">
+                    <div class="npp-col-text">
+                        <h2 class="section-title">说明</h2>
+                        <p class="description">
+                            在生态系统科学和全球碳循环研究中，一个生态系统每年通过光合作用净吸收并以生物质形式固定的碳量，被定义为净初级生产力（Net Primary Productivity, NPP）。将“碳汇能力”明确地映射到NPP这一国际公认的、可遥感监测的科学变量上，是构建本模型的基石。
+                        </p>
+                    </div>
+                    <div class="npp-col-img">
+                        <div class="img-wrap">
+                            <img src="净生产力.png" alt="净初级生产力">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

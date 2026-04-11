@@ -1,0 +1,8 @@
+{
+  "parts": [
+    "geojson.bundle.part1.js",
+    "geojson.bundle.part2.js"
+  ],
+  "count": 2,
+  "max_part_mb": 24.0
+}

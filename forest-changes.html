@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>森林变化监测 | 林火碳卫士—基于VIIRS卫星高精度森林火灾碳排放实时核算与预警系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-green: #2d6a4f;
+            --accent-blue: #0077b6;
+            --bg-light: #f8fafc;
+            --panel-white: #ffffff;
+            --text-dark: #1e293b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Microsoft YaHei", sans-serif; }
+        body { background-color: var(--bg-light); color: var(--text-dark); min-height: 100vh; display: flex; flex-direction: column; }
+
+        .navbar {
+            height: 64px; background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 32px; border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(45,106,79,0.08); flex-shrink: 0;
+        }
+        .nav-brand { font-size: 16px; font-weight: 600; color: var(--primary-green); display: flex; align-items: center; gap: 10px; letter-spacing: 0.02em; }
+        .nav-menu { display: flex; align-items: center; gap: 6px; }
+        .nav-item {
+            padding: 10px 18px; border-radius: 10px; font-size: 14px; font-weight: 500;
+            transition: all 0.25s ease; color: #64748b; text-decoration: none; border: 1px solid transparent;
+        }
+        .nav-item:hover { background: rgba(45,106,79,0.08); color: var(--primary-green); }
+        .nav-item.active { background: linear-gradient(135deg, var(--primary-green) 0%, #1b4332 100%); color: white; box-shadow: 0 2px 8px rgba(45,106,79,0.3); }
+
+        .main { flex: 1; max-width: 1200px; margin: 0 auto; padding: 32px 24px; width: 100%; }
+        .page-title { font-size: 24px; font-weight: 600; color: var(--primary-green); margin-bottom: 28px; display: flex; align-items: center; gap: 10px; }
+        .card {
+            background: var(--panel-white); border-radius: 14px; border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04); margin-bottom: 28px; overflow: hidden;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(45,106,79,0.1); }
+        .card-header {
+            padding: 16px 22px; background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 100%);
+            border-bottom: 1px solid #e2e8f0; font-size: 16px; font-weight: 600; color: var(--primary-green);
+        }
+        .card-body { padding: 24px; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 28px; }
+        .text-content { flex: 1; min-width: 260px; }
+        .section-title { font-size: 17px; margin-bottom: 12px; color: var(--text-dark); border-bottom: 2px solid var(--primary-green); padding-bottom: 8px; display: inline-block; }
+        .description { line-height: 1.75; color: #475569; font-size: 14px; }
+        .diagram { width: 100%; max-width: 800px; height: 400px; min-height: 300px; border-radius: 10px; overflow: hidden; }
+        .img-wrap { text-align: center; padding: 20px; }
+        .img-wrap img { max-width: 66.66%; height: auto; border-radius: 10px; border: 1px solid #e2e8f0; transition: transform 0.3s ease; }
+        .img-wrap:hover img { transform: scale(1.01); }
+
+        @media (max-width: 768px) {
+            .nav-brand { font-size: 14px; }
+            .nav-menu { gap: 8px; }
+            .nav-item { padding: 6px 12px; font-size: 13px; }
+            .card-body { flex-direction: column; }
+            .diagram { height: 280px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand"><i class="fas fa-leaf"></i> 林火碳卫士—基于VIIRS卫星高精度森林火灾碳排放实时核算与预警系统</div>
+        <div class="nav-menu">
+            <a href="platform_K.html" class="nav-item">火情监测</a>
+            <!--<a href="carbon-trade.html" class="nav-item">减排协同</a>-->
+            <a href="fire-analysis.html" class="nav-item">火灾碳排分析</a>
+            <a href="forest-changes.html" class="nav-item active">森林变化</a>
+            <a href="C-accounting.html" class="nav-item">碳汇损失核算</a>
+            <a href="about.html" class="nav-item">项目简介</a>
+        </div>
+    </nav>
+
+    <main class="main">
+        <h1 class="page-title"><i class="fas fa-tree"></i> 森林变化监测</h1>
+
+        <div class="card">
+            <div class="img-wrap">
+                <img src="Forest and grass vegetation coverage.png" alt="林草覆盖">
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">全国森林覆盖率变化趋势</div>
+            <div class="card-body">
+                <div class="text-content">
+                    <h2 class="section-title">说明</h2>
+                    <p class="description">
+                        从2001到2023，中国损失了12.1Mha的树木覆盖，相当于2000以来树木覆盖减少量的7.4%以及5.61Gt的二氧化碳排放量。
+                    </p>
+                </div>
+                <div class="diagram" id="chart-coverage"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">全国森林面积变化趋势</div>
+            <div class="card-body">
+                <div class="text-content">
+                    <h2 class="section-title">说明</h2>
+                    <p class="description">
+                        自2002年起至2023年止，中国损失了80.7 kha的湿润原始森林，占其同期树木覆盖损失总面积的0.68%，在这段时间里，中国的湿润原始森林的总面积减少了4.7%。
+                    </p>
+                </div>
+                <div class="diagram" id="chart-area"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        var xData = ['1992','1993','1994','1995','1996','1997','1998','1999','2000','2001','2002','2003','2004','2005','2006','2007','2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018','2019','2020','2021','2022'];
+        var chart1 = echarts.init(document.getElementById('chart-coverage'));
+        chart1.setOption({
+            title: { left: 'center', text: '全国森林覆盖率' },
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            color: '#228B22',
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: [{ type: 'category', data: xData, axisTick: { alignWithLabel: true } }],
+            yAxis: [{ type: 'value' }],
+            series: [{ name: '覆盖率', type: 'bar', barWidth: '60%', data: ['13.40','13.40','13.40','13.40','13.40','13.92','13.92','16.55','16.55','16.55','16.55','18.21','20.36','20.36','20.36','20.36','20.36','21.63','21.63','21.63','21.63','21.63','22.96','22.96','22.96','22.96','22.96','22.96','22.96','22.96','22.96','22.96'] }]
+        });
+
+        var chart2 = echarts.init(document.getElementById('chart-area'));
+        chart2.setOption({
+            title: { left: 'center', text: '全国森林面积变化图' },
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            color: '#228B22',
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: [{ type: 'category', data: xData, axisTick: { alignWithLabel: true } }],
+            yAxis: [{ type: 'value' }],
+            series: [{ name: '面积', type: 'bar', barWidth: '60%', data: ['12863.00','12863.00','12863.00','12863.00','12863.00','13370.00','13370.00','15894.00','15894.00','15894.10','15894.10','17490.90','19545.22','19545.22','19545.22','19545.22','19545.22','20768.73','20768.73','20768.73','20768.73','20768.73','22044.62','22044.62','22044.62','22044.62','22044.62','22044.62','22044.62','22044.62','22044.62'] }]
+        });
+
+        window.addEventListener('resize', function() { chart1.resize(); chart2.resize(); });
+    </script>
+</body>
+</html>

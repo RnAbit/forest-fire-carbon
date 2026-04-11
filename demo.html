@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>林火碳卫兵 · 节能减排竞赛演示</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/apache/echarts@4.9.0/map/js/china.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-green: #2d6a4f; /* 节能减排标志性绿色 */
+            --accent-blue: #0077b6;
+            --bg-light: #f8fafc;
+            --panel-white: #ffffff;
+            --text-dark: #1e293b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Microsoft YaHei", sans-serif; }
+        body { background-color: var(--bg-light); color: var(--text-dark); overflow: hidden; }
+
+        /* 顶部大导航 - 突出大赛项目名 */
+        .navbar {
+            height: 70px; background: var(--panel-white); display: flex; align-items: center;
+            justify-content: space-between; padding: 0 40px; border-bottom: 2px solid var(--primary-green);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .nav-brand { font-size: 24px; font-weight: bold; color: var(--primary-green); display: flex; align-items: center; gap: 10px; }
+        .nav-menu { display: flex; gap: 20px; }
+        .nav-item { 
+            padding: 8px 20px; border-radius: 20px; font-size: 15px; cursor: pointer; 
+            transition: 0.3s; border: 1px solid #e2e8f0; color: #64748b;
+        }
+        .nav-item.active { background: var(--primary-green); color: white; border-color: var(--primary-green); }
+
+        /* 主体四段式布局 */
+        .dashboard {
+            display: grid; grid-template-columns: 320px 1fr 300px;
+            height: calc(100vh - 70px); padding: 15px; gap: 15px;
+        }
+
+        /* 通用卡片样式 */
+        .card { 
+            background: var(--panel-white); border-radius: 12px; border: 1px solid #e2e8f0; 
+            display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .card-header { 
+            padding: 12px 15px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0;
+            font-size: 15px; font-weight: bold; color: var(--primary-green);
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        /* 左侧：深度分析（去年旧版块融合区） */
+        .left-panel { gap: 15px; display: flex; flex-direction: column; }
+        .img-box { padding: 10px; text-align: center; }
+        .img-box img { width: 100%; border-radius: 6px; border: 1px solid #eee; margin-bottom: 5px; }
+        .img-desc { font-size: 12px; color: #64748b; font-style: italic; }
+
+        /* 中间：核心地图 */
+        .center-panel { position: relative; }
+        #map-view { flex: 1; width: 100%; height: 100%; }
+        .map-legend {
+            position: absolute; bottom: 20px; left: 20px; background: rgba(255,255,255,0.9);
+            padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 12px;
+        }
+
+        /* 右侧：实时监测与操作 */
+        .right-panel { gap: 15px; display: flex; flex-direction: column; }
+        .stat-row { padding: 15px; display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .stat-item { background: #f8fafc; padding: 12px; border-radius: 8px; border-left: 4px solid var(--accent-blue); }
+        .stat-label { font-size: 12px; color: #64748b; }
+        .stat-value { font-size: 20px; font-weight: bold; color: var(--text-dark); margin-top: 5px; }
+
+        /* 动态日志列表 */
+        .log-list { flex: 1; padding: 10px; font-size: 12px; overflow-y: auto; }
+        .log-item { padding: 8px; border-bottom: 1px solid #f1f5f9; animation: fadeIn 0.5s; }
+        .badge-red { background: #fee2e2; color: #ef4444; padding: 2px 6px; border-radius: 4px; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand"><i class="fas fa-leaf"></i> 林火碳卫兵 · 协同减排决策系统</div>
+        <div class="nav-menu">
+            <div class="nav-item active">火情监测</div>
+            <div class="nav-item">森林变化</div>
+            <div class="nav-item">碳汇分析</div>
+            <div class="nav-item">操作指南</div>
+            <div class="nav-item">项目简介</div>
+        </div>
+    </nav>
+
+    <div class="dashboard">
+        <div class="left-panel">
+            <div class="card" style="flex: 1;">
+                <div class="card-header"><i class="fas fa-history"></i> 生态基底数据 (旧版块融合)</div>
+                <div class="img-box">
+                    <img src="林地分布.jpg" alt="林地分布">
+                    <p class="img-desc">全国林地分布空间本底图</p>
+                </div>
+                <div class="img-box">
+                    <img src="净生产力.jpg" alt="NPP">
+                    <p class="img-desc">逐年净初级生产力 (NPP) 基准</p>
+                </div>
+                <div style="padding: 15px; font-size: 13px; color: #475569; line-height: 1.6; border-top: 1px solid #f1f5f9;">
+                    <i class="fas fa-info-circle"></i> 基于去年的 NPP 损耗模型，系统现已支持市县级尺度的<strong>实时碳损失核算</strong>。
+                </div>
+            </div>
+        </div>
+
+        <div class="card center-panel">
+            <div class="card-header" style="background: white; border: none;">
+                <i class="fas fa-map-marked-alt"></i> 全国火点分布及减排潜力图 (实时下钻)
+            </div>
+            <div id="map-view"></div>
+            <div class="map-legend">
+                <strong>图例说明：</strong><br>
+                <i class="fas fa-circle" style="color:#ef4444"></i> 实时活跃火点 (NASA FIRMS)<br>
+                <i class="fas fa-square" style="color:rgba(45, 106, 79, 0.2)"></i> 重点防护碳库区域
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-chart-line"></i> 实时碳排监测</div>
+                <div class="stat-row">
+                    <div class="stat-item">
+                        <div class="stat-label">活跃火点数量</div>
+                        <div class="stat-value" id="v-count">34 个</div>
+                    </div>
+                    <div class="stat-item" style="border-left-color: var(--primary-green);">
+                        <div class="stat-label">预估 CO₂ 排放速率</div>
+                        <div class="stat-value" id="v-co2">142.5 t/h</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card" style="flex: 1;">
+                <div class="card-header"><i class="fas fa-rss"></i> 市县协同预警日志</div>
+                <div class="log-list" id="log-list">
+                    </div>
+            </div>
+
+            <button style="background: var(--primary-green); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                <i class="fas fa-file-export"></i> 生成减排决策报告
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 初始化明亮风格地图
+        const myChart = echarts.init(document.getElementById('map-view'));
+        const option = {
+            geo: {
+                map: 'china', roam: true, zoom: 1.2,
+                itemStyle: {
+                    normal: { areaColor: '#f1f5f9', borderColor: '#cbd5e1', borderWidth: 1 },
+                    emphasis: { areaColor: '#e2e8f0' }
+                }
+            },
+            series: [{
+                type: 'effectScatter', coordinateSystem: 'geo',
+                data: [
+                    {name: '四川', value: [102.22, 27.89, 100]},
+                    {name: '黑龙江', value: [124.71, 52.33, 80]}
+                ],
+                symbolSize: 12, rippleEffect: { brushType: 'stroke' },
+                itemStyle: { color: '#ef4444' }
+            }]
+        };
+        myChart.setOption(option);
+
+        // 模拟日志滚动
+        const list = document.getElementById('log-list');
+        const msgs = [
+            "四川凉山州检测到新增火点，FRP 89.2 MW",
+            "碳汇损失模型已介入，预估年度吸收量下降 2.4%",
+            "下风向市县联动预警已发送至云南昭通市",
+            "减排决策建议：优先切断西北向蔓延路径"
+        ];
+        function addLog() {
+            const div = document.createElement('div');
+            div.className = 'log-item';
+            div.innerHTML = `<span class="badge-red">ALERT</span> ${msgs[Math.floor(Math.random()*msgs.length)]}`;
+            list.insertBefore(div, list.firstChild);
+            if(list.children.length > 8) list.removeChild(list.lastChild);
+        }
+        setInterval(addLog, 3000);
+        for(let i=0; i<5; i++) addLog();
+    </script>
+</body>
+</html>

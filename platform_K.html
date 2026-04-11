@@ -1,0 +1,1934 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>林火碳卫士—基于VIIRS卫星高精度森林火灾碳排放实时核算与预警系统</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root { --primary-green: #2d6a4f; --accent-blue: #0077b6; --bg-light: #f8fafc; --panel-white: #ffffff; --text-dark: #1e293b; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "Microsoft YaHei", "Microsoft Yahei", Arial, sans-serif; background-color: var(--bg-light); color: var(--text-dark); overflow: auto; }
+
+        /* 顶部导航 - 主界面风格 */
+        #nav { height: 64px; background: linear-gradient(180deg, #fff 0%, #f8fafc 100%); display: flex; justify-content: space-between; align-items: center; padding: 0 32px; border-bottom: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(45,106,79,0.08); }
+        #logo { font-size: 16px; font-weight: 600; color: var(--primary-green); display: flex; align-items: center; gap: 10px; letter-spacing: 0.02em; }
+        #satetype { display: none; }
+        #nav-right-serve { display: flex; align-items: center; gap: 6px; }
+        .nav-user-infor { color: #64748b; text-decoration: none; font-size: 14px; margin-right: 8px; }
+        .nav-lables { padding: 10px 18px; border-radius: 10px; font-size: 14px; font-weight: 500; transition: all 0.25s ease; color: #64748b; text-decoration: none; border: 1px solid transparent; }
+        .nav-lables:hover { background: rgba(45,106,79,0.08); color: var(--primary-green); }
+        .nav-lables.active { background: linear-gradient(135deg, var(--primary-green) 0%, #1b4332 100%); color: white; box-shadow: 0 2px 8px rgba(45,106,79,0.3); }
+        .display-btn { display: none; }
+
+        /* 主体布局：上方小预警 + 大地图，下方横向独立卡片 */
+        .dashboard { min-height: calc(100vh - 64px); padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow: visible; }
+        .top-section { display: grid; grid-template-columns: minmax(230px, 270px) 1fr minmax(300px, 340px); gap: 15px; min-height: 620px; height: 72vh; }
+        .bottom-section { display: grid; grid-template-columns: repeat(3, minmax(320px, 1fr)); gap: 15px; min-height: 560px; height: auto; }
+        .left-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+        .center-panel { position: relative; min-width: 0; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+        .right-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; gap: 10px; }
+        .card { background: var(--panel-white); border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; }
+        .card-header { padding: 12px 15px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; font-size: 15px; font-weight: bold; color: var(--primary-green); display: flex; align-items: center; gap: 8px; }
+
+        #choose_type, #v_type { padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; width: 100%; }
+
+        /* ===== 新增预警样式 ===== */
+        .alert-card { margin-top: 0; height: 100%; min-height: 0; display: flex; flex-direction: column; }
+        .alert-header { background: #fee2e2; color: #b91c1c; border-bottom-color: #fecaca; display: flex; align-items: center; font-size: 14px; padding: 12px 14px; }
+        .alert-list { flex: 1; min-height: 0; max-height: none; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+        .alert-item { padding: 12px; border-radius: 10px; border-left: 4px solid; animation: slideIn 0.3s ease; cursor: pointer; transition: transform 0.2s; }
+        .alert-item:hover { transform: translateX(2px); }
+        .alert-item.high { background: #fee2e2; border-left-color: #b91c1c; }
+        .alert-item.medium { background: #fff3cd; border-left-color: #856404; }
+        .alert-item.low { background: #d1e7dd; border-left-color: #0f5132; }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .alert-title { font-weight: 600; margin-bottom: 8px; display: flex; justify-content: space-between; font-size: 13px; line-height: 1.35; }
+        .alert-badge { font-size: 11px; padding: 3px 9px; border-radius: 12px; background: rgba(255,255,255,0.5); }
+        .alert-details { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; margin: 8px 0; color: #475569; }
+        .alert-action { font-size: 12px; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.5); margin-top: 6px; color: #334155; line-height: 1.45; }
+        .alert-time { display: flex; justify-content: space-between; font-size: 10px; color: #64748b; margin-top: 8px; }
+        .btn-warning { background: #ef4444; color: white; border: none; padding: 9px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.3s; font-size: 13px; }
+        .btn-warning:hover { background: #dc2626; }
+        .btn-warning.active { background: var(--primary-green); }
+        .btn-refresh { background: #3498db; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .alert-footer { padding: 10px 12px; border-top: 1px solid #e2e8f0; display: flex; gap: 8px; flex-shrink: 0; }
+
+        /* 隐藏的模块默认不显示 */
+        #logIn, #data-operate, #formDiv, #displayData, #importData { display: none; }
+
+        /* 登录窗口 */
+        #logIn { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        #logform { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 300px; }
+        #logform h1 { text-align: center; margin-bottom: 20px; color: #2c3e50; font-size: 20px; }
+        .input-style { margin: 8px 0; padding: 8px 10px; width: 100%; border: 1px solid #ddd; border-radius: 4px; }
+        #logform button { width: 48%; padding: 8px; margin-top: 10px; border: none; border-radius: 4px; cursor: pointer; }
+        #logform button:first-of-type { background: #3498db; color: white; margin-right: 4%; }
+        #logform button:last-of-type { background: #95a5a6; color: white; }
+
+        /* 数据操作模块 */
+        #data-operate { padding: 15px; background: white; margin: 10px 20px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        .choose-lab-btn { margin: 0 5px; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; color: white; }
+        #updata-btn { background: #3498db; }
+        #import-btn { background: #2ecc71; }
+        #query-btn { background: #f39c12; }
+        #oprate-cancel-btn { background: #e74c3c; }
+
+        /* 修改表单窗口 */
+        #formDiv { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; width: 400px; }
+        #citychoose { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; }
+        #formbox form > div { margin: 10px 0; }
+        .input-infor { font-size: 12px; margin-left: 8px; }
+        .ture-input { color: #2ecc71; }
+        .fault-input { color: #e74c3c; }
+        #formbox button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; }
+        #formbox button:first-of-type { background: #3498db; color: white; }
+        #updata-cancel-btn { background: #95a5a6; color: white; }
+
+        /* 查看数据窗口 */
+        #displayData { position: fixed; top: 10%; left: 10%; width: 80%; height: 80%; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; overflow: auto; }
+        #display-cancel-btn { position: absolute; top: 15px; right: 15px; background: #e74c3c; color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; }
+        #displayData span { font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 15px; display: block; }
+        #displayData table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        #displayData th, #displayData td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        #displayData th { background: #f2f2f2; font-weight: bold; }
+
+        /* 导入数据窗口 */
+        #importData { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; width: 400px; }
+        #importData h1 { font-size: 18px; color: #2c3e50; margin-bottom: 15px; text-align: center; }
+        #fileInput { display: none; }
+        .custom-file-label { display: inline-block; padding: 8px 16px; background: #3498db; color: white; border-radius: 4px; cursor: pointer; margin-bottom: 15px; }
+        #sliderdiv { margin: 15px 0; }
+        #slider { width: 80%; margin-right: 10px; }
+        #importData button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; }
+        #confirm { background: #2ecc71; color: white; }
+        #importclose { background: #e74c3c; color: white; }
+
+        /* 地图容器 - 中间栏 */
+        #viewDiv { flex: 1; position: relative; min-height: 0; display: flex; flex-direction: column; }
+        #viewMap { width: 100%; flex: 1; min-height: 520px; border-radius: 8px; }
+        #back-to-national { top: 10px !important; right: 15px !important; border-radius: 8px !important; font-size: 12px !important; }
+
+        /* 右侧 NASA 数据 - 卡片内 */
+        .nasa-data-container { padding: 15px; overflow-y: auto; flex: 1; min-height: 0; max-width: none; margin: 0; }
+        .nasa-title { font-size: 15px; font-weight: 600; margin-bottom: 8px; color: var(--primary-green); }
+        .nasa-subtitle { font-size: 12px; color: #64748b; margin-bottom: 12px; border: none; padding: 0; }
+        .nasa-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .nasa-stat-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center; }
+        .nasa-stat-label { color: #64748b; font-size: 11px; margin-bottom: 4px; }
+        .nasa-stat-value { font-size: 18px; font-weight: bold; color: var(--text-dark); }
+        .nasa-stat-unit { color: #94a3b8; font-size: 11px; margin-top: 2px; }
+        .nasa-table-container { flex: 1; overflow: auto; font-size: 11px; }
+        .nasa-table { width: 100%; border-collapse: collapse; }
+        .nasa-table th { text-align: left; padding: 6px 4px; font-weight: 600; color: var(--primary-green); border-bottom: 1px solid #e2e8f0; font-size: 11px; }
+        .nasa-table td { padding: 6px 4px; border-bottom: 1px solid #f1f5f9; color: #475569; font-size: 11px; }
+        .nasa-timestamp { color: #94a3b8; font-size: 10px; margin-top: 8px; text-align: right; }
+        .nasa-error-message { color: #b91c1c; background: #fee2e2; padding: 8px; border-radius: 8px; font-size: 12px; display: none; }
+        .nasa-footer { padding: 10px 15px; text-align: center; color: #94a3b8; font-size: 11px; border-top: 1px solid #e2e8f0; margin: 0; }
+        .bottom-card { min-width: 0; width: 100%; height: 540px; }
+        .pipeline-card { flex-shrink: 0; padding: 8px 10px; }
+        .nasa-progress-card { border: 1px solid #e2e8f0; background: #fff; }
+        .pipeline-track { width: 100%; height: 8px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+        .pipeline-fill { height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg, #2d6a4f 0%, #16a34a 100%); transition: width 0.5s ease; }
+        .pipeline-nodes { margin-top: 6px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+        .pipeline-node { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #94a3b8; }
+        .pipeline-node-dot { width: 8px; height: 8px; border-radius: 50%; background: #cbd5e1; transition: all 0.3s ease; }
+        .pipeline-node-text { font-size: 9px; line-height: 1.2; text-align: center; white-space: nowrap; }
+        .pipeline-node.active { color: #2d6a4f; }
+        .pipeline-node.active .pipeline-node-dot { background: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.15); }
+        .pipeline-node.pulse .pipeline-node-dot { animation: nodePulse 1.2s infinite; }
+        @keyframes nodePulse { 0% { transform: scale(1); } 50% { transform: scale(1.25); } 100% { transform: scale(1); } }
+        .pipeline-label-row { margin-top: 4px; display: flex; justify-content: space-between; gap: 8px; font-size: 10px; color: #64748b; }
+        .pipeline-meta { color: #64748b; line-height: 1.2; text-align: right; }
+        .pipeline-num { font-weight: 700; color: var(--primary-green); }
+        .quality-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 15px 12px; }
+        .quality-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; font-size: 11px; }
+        .quality-item .q-label { color: #64748b; margin-bottom: 4px; }
+        .quality-item .q-val { font-size: 16px; font-weight: 700; color: var(--text-dark); }
+        .chart-card-body { padding: 12px; display: flex; flex-direction: column; gap: 10px; height: 100%; }
+        .mini-chart { width: 100%; height: 240px; min-height: 220px; }
+        .mini-chart-tall { height: 280px; }
+        @media (max-width: 1200px) {
+            .top-section { grid-template-columns: 240px 1fr; }
+            .right-panel { grid-column: 1 / -1; }
+            .bottom-section { grid-template-columns: repeat(2, minmax(280px, 1fr)); }
+        }
+        @media (max-width: 900px) {
+            body { overflow: auto; }
+            .dashboard { height: auto; overflow: visible; }
+            .top-section { grid-template-columns: 1fr; height: auto; }
+            .left-panel { min-height: 320px; }
+            .center-panel { min-height: 420px; }
+            .bottom-section { grid-template-columns: 1fr; height: auto; }
+            .pipeline-label-row { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div id="nav">
+        <div id="logo"><i class="fas fa-leaf"></i> 林火碳卫士—基于VIIRS卫星高精度森林火灾碳排放实时核算与预警系统</div>
+        <div id="satetype"></div>
+        <div id="nav-right-serve">
+            <a class="nav-lables active" href="platform_K.html">火情监测</a>
+            <a class="nav-lables" href="fire-analysis.html">火灾碳排分析</a>
+            <a class="nav-lables" href="forest-changes.html">森林变化</a>
+            <a class="nav-lables" href="C-accounting.html">碳汇损失核算</a>
+            <a class="nav-lables" href="about.html">项目简介</a>
+        </div>
+    </div>
+
+    <!-- 保留脚本依赖：隐藏控件，不占版面 -->
+    <select id="choose_type" aria-hidden="true" tabindex="-1" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;">
+        <option value="CO2" selected>CO2气体排放量</option>
+    </select>
+    <button id="show-btn" type="button" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;">显示地图</button>
+
+    <div class="dashboard">
+        <div class="top-section">
+            <div class="left-panel">
+                <div class="card alert-card">
+                    <div class="card-header alert-header">
+                        <i class="fas fa-exclamation-triangle"></i> 实时CO₂排放预警
+                        <span style="margin-left: auto; font-size: 12px; background: #ef4444; color: white; padding: 2px 8px; border-radius: 12px;" id="alert-count">0条新</span>
+                    </div>
+                    <div class="alert-list" id="alert-list">
+                        <div style="padding: 20px; text-align: center; color: #64748b;">⏳ 加载预警中...</div>
+                    </div>
+                    <div class="alert-footer">
+                        <button id="show-alerts-btn" class="btn-warning" style="flex: 2;">
+                            <i class="fas fa-map-marker-alt"></i> 显示高危排放点
+                        </button>
+                        <button id="refresh-alerts-btn" class="btn-refresh" style="flex: 1;">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="center-panel">
+                <div class="card" style="flex:1; display:flex; flex-direction:column; min-height:0;">
+                    <div class="card-header" style="background:#fff; border-bottom:1px solid #e2e8f0;"><i class="fas fa-map-marked-alt"></i> 森林火点分布 · 省级 CO₂ 排放核算（t/h）</div>
+                    <div id="viewDiv" style="flex:1; min-height:0; position:relative;">
+                        <button id="back-to-national" style="display: none; position: absolute; top: 10px; right: 15px; z-index: 100; padding: 6px 14px; background: #e74c3c; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold;">返回全国</button>
+                        <div id="viewMap"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="card pipeline-card nasa-progress-card">
+                    <div class="pipeline-track">
+                        <div id="pipelineFill" class="pipeline-fill"></div>
+                    </div>
+                    <div class="pipeline-nodes" id="pipelineNodes">
+                        <div class="pipeline-node" data-step="1"><span class="pipeline-node-dot"></span><span class="pipeline-node-text">原始抓取</span></div>
+                        <div class="pipeline-node" data-step="2"><span class="pipeline-node-dot"></span><span class="pipeline-node-text">置信过滤</span></div>
+                        <div class="pipeline-node" data-step="3"><span class="pipeline-node-dot"></span><span class="pipeline-node-text">境内筛选</span></div>
+                        <div class="pipeline-node" data-step="4"><span class="pipeline-node-dot"></span><span class="pipeline-node-text">森林筛选</span></div>
+                        <div class="pipeline-node" data-step="5"><span class="pipeline-node-dot"></span><span class="pipeline-node-text">可视化</span></div>
+                    </div>
+                    <div class="pipeline-label-row">
+                        <div id="pipelineLabel">处理进度：等待数据</div>
+                        <div id="pipelineMeta" class="pipeline-meta"></div>
+                    </div>
+                </div>
+                <div class="card" style="display:flex; flex-direction:column; min-height:0; height:100%;">
+                    <div class="card-header"><i class="fas fa-fire"></i> 森林火点监测 (NASA FIRMS)</div>
+                    <div class="nasa-data-container" style="max-height:none;">
+                        <h1 class="nasa-title">森林火点数据 (NASA FIRMS)</h1>
+                        <div class="nasa-subtitle">中国区域 · 精准提取匹配 · 每10分钟自动更新</div>
+                        <div class="nasa-stats-grid" id="statsGrid">
+                            <div class="nasa-stat-card"><div class="nasa-stat-label">活跃火点数量</div><div class="nasa-stat-value" id="fireCount">--</div><div class="nasa-stat-unit">个</div></div>
+                            <div class="nasa-stat-card"><div class="nasa-stat-label">总 FRP</div><div class="nasa-stat-value" id="totalFrp">--</div><div class="nasa-stat-unit">MW</div></div>
+                            <div class="nasa-stat-card"><div class="nasa-stat-label">估算 CO₂ 排放</div><div class="nasa-stat-value" id="totalCo2">--</div><div class="nasa-stat-unit">吨/小时</div></div>
+                            <div class="nasa-stat-card"><div class="nasa-stat-label">估算 PM2.5 排放</div><div class="nasa-stat-value" id="totalPm25">--</div><div class="nasa-stat-unit">吨/小时</div></div>
+                        </div>
+                        <div class="nasa-table-container">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px;">
+                                <h3 style="font-weight:500;">最新火点 (中国境内)</h3>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <label for="provinceFilter" style="color: #6b6b6b;">省份筛选：</label>
+                                    <select id="provinceFilter" style="padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px; min-width: 120px;">
+                                        <option value="all">全部省份</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <table class="nasa-table" id="fireTable">
+                                <thead>
+                                    <tr>
+                                        <th>经度</th><th>纬度</th><th>FRP (MW)</th><th>估算 CO₂ (t/h)</th><th>发现时间 (UTC)</th><th>省份</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBody"><tr><td colspan="6" style="text-align:center;">加载中......</td></tr></tbody>
+                            </table>
+                            <div class="nasa-timestamp" id="updateTime">最后更新: --</div>
+                        </div>
+                        <div id="errorDisplay" class="nasa-error-message"></div>
+                    </div>
+                    <div class="nasa-footer">数据来源: NASA FIRMS (VIIRS S-NPP)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-section">
+            <div class="card pipeline-card bottom-card">
+                <div class="card-header"><i class="fas fa-filter"></i> 数据质量统计 (VIIRS confidence)</div>
+                <div class="quality-grid" id="qualityStatsGrid">
+                    <div class="quality-item"><div class="q-label">高置信度 (h)</div><div class="q-val" id="qHigh">—</div></div>
+                    <div class="quality-item"><div class="q-label">中置信度 (n)</div><div class="q-val" id="qMid">—</div></div>
+                    <div class="quality-item"><div class="q-label">低置信度 (l)</div><div class="q-val" id="qLow">—</div></div>
+                    <div class="quality-item"><div class="q-label">置信度剔除</div><div class="q-val" id="qConfDrop">—</div></div>
+                    <div class="quality-item" style="grid-column: 1 / -1;"><div class="q-label">非林地等其他剔除（相对中国境内合格点）</div><div class="q-val" id="qForestDrop">—</div></div>
+                </div>
+            </div>
+            <div class="card bottom-card" style="display:flex; flex-direction:column; min-height:320px;">
+                <div class="card-header"><i class="fas fa-chart-line"></i> 碳排放趋势（实时）</div>
+                <div class="chart-card-body">
+                    <div class="mini-chart" id="chartFreRealtime"></div>
+                    <div class="mini-chart mini-chart-tall" id="chartCo2ProvinceRealtime"></div>
+                </div>
+            </div>
+            <div class="card bottom-card" style="display:flex; flex-direction:column; min-height:320px;">
+                <div class="card-header"><i class="fas fa-braille"></i> 森林覆盖率 vs 火点/排放</div>
+                <div class="chart-card-body">
+                    <p style="font-size:11px;color:#64748b;">X：省森林覆盖率（%）；Y：当前森林火点数量。数据为公报/年鉴近似值。</p>
+                    <div class="mini-chart mini-chart-tall" id="chartForestScatter"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="logIn">
+        <div id="logform">
+            <h1>用户登录</h1>
+            <form action="">
+                <input type="text" class='input-style' placeholder="请输入用户名" id="login-username" autocomplete="username">
+                <input type="password" class='input-style' placeholder="请输入密码" id="login-password" autocomplete="current-password">
+                <button type="submit">登录</button>
+                <button type="button" id="login-back">返回</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="data-operate">
+        <div id="choose-lab">
+            <select name="" id="v_type">
+                <option value="FRP" class="type">火点辐射功率</option>
+                <option value="FRE" class="type">火点辐射能</option>
+                <option value="M" class="type">生物量</option>
+                <option value="CO" class="type">CO气体排放量</option>
+                <option value="CO2" class="type">CO2气体排放量</option>
+                <option value="PM25" class="type">PM2.5排放量</option>
+                <option value="BC" class="type">BC排放量</option>
+                <option value="LossCO2_C" class="type">碳计年碳汇损失量</option>
+                <option value="LossCO2_CO2" class="type">CO2计年碳汇损失量</option>
+            </select>
+            <button class="choose-lab-btn" id="updata-btn">修改数据</button>
+            <button class="choose-lab-btn" id="import-btn">导入数据</button>
+            <button class="choose-lab-btn" id="query-btn">查看数据</button>
+            <button class="choose-lab-btn" id="oprate-cancel-btn">取消</button>
+        </div> 
+    </div>
+
+    <div id="formDiv">
+        <div id="formbox">
+            <form id="update-form" action="">
+                <select id="citychoose">
+                    <option value="beijing" class="cityname">北京</option>
+                    <option value="tianjin" class="cityname">天津</option>
+                    <option value="shanghai" class="cityname">上海</option>
+                    <option value="chongqing" class="cityname">重庆</option>
+                    <option value="hebei" class="cityname">河北</option>
+                    <option value="shanxi" class="cityname">山西</option>
+                    <option value="liaoning" class="cityname">辽宁</option>
+                    <option value="jilin" class="cityname">吉林</option>
+                    <option value="heilongjiang" class="cityname">黑龙江</option>
+                    <option value="jiangsu" class="cityname">江苏</option>
+                    <option value="zhejiang" class="cityname">浙江</option>
+                    <option value="anhui" class="cityname">安徽</option>
+                    <option value="fujian" class="cityname">福建</option>
+                    <option value="jiangxi" class="cityname">江西</option>
+                    <option value="shandong" class="cityname">山东</option>
+                    <option value="henan" class="cityname">河南</option>
+                    <option value="hubei" class="cityname">湖北</option>
+                    <option value="hunan" class="cityname">湖南</option>
+                    <option value="guangdong" class="cityname">广东</option>
+                    <option value="hainan" class="cityname">海南</option>
+                    <option value="sichuan" class="cityname">四川</option>
+                    <option value="guizhou" class="cityname">贵州</option>
+                    <option value="yunnan" class="cityname">云南</option>
+                    <option value="shaanxi" class="cityname">陕西</option>
+                    <option value="gansu" class="cityname">甘肃</option>
+                    <option value="qinghai" class="cityname">青海</option>
+                    <option value="taiwan" class="cityname">台湾</option>
+                    <option value="neimenggu" class="cityname">内蒙古</option>
+                    <option value="guangxi" class="cityname">广西</option>
+                    <option value="xizang" class="cityname">西藏</option>
+                    <option value="ningxia" class="cityname">宁夏</option>
+                    <option value="xinjiang" class="cityname">新疆</option>
+                    <option value="xianggang" class="cityname">香港</option>
+                    <option value="aomen" class="cityname">澳门</option>
+                    <option value="nanhai" class="cityname">南海诸岛</option>
+                </select>  
+            </form>
+        </div>
+    </div>
+
+    <div id="displayData">
+        <button id="display-cancel-btn">X</button>
+        <span></span>
+        <table>
+            <thead>
+                <tr>
+                    <th>城市名</th>
+                    <th>价值量</th>
+                    <th>修改者</th>
+                    <th>修改时间</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="importData">
+        <h1>读取数据文件</h1>
+        <input type="file" id="fileInput" accept=".json">
+        <label for="fileInput" class="custom-file-label">选择JSON数据文件</label>
+        <div id="sliderdiv">
+            <label for="slider">选择数据日期:</label>
+            <input type="range" id="slider" min="0" max="0" value="0">
+            <span id="selectedValue"></span>
+        </div>
+        <button id="confirm">确定导入</button>
+        <button id="importclose">关闭</button>
+    </div>
+
+    <!-- 为了恢复你要的 P2 显示效果：优先使用与历史效果一致的 CDN 版本 -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <script>
+        if (!window.echarts) {
+            document.write('<script src="./echarts.js"><\/script>');
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/map/js/china.js"></script>
+    <script>
+        if (!(window.echarts && echarts.getMap && echarts.getMap('china'))) {
+            document.write('<script src="./china.js"><\/script>');
+        }
+    </script>
+    
+    <!-- 行政区 GeoJSON 分片包（每个文件 <25MB，便于 GitHub 网页上传） -->
+    <script src="./geojson.bundle.part1.js"></script>
+    <script src="./geojson.bundle.part2.js"></script>
+    <script src="./geojson.bundle.part3.js"></script>
+
+    <script src="carbon-data.js"></script>
+
+    <script type="text/javascript">
+        // 全局变量提取
+        let myChart = null;
+        let currentMapType = 'china';
+
+        // NASA 实时数据全局存储，仅保存确认处于中国境内的火点
+        let lastData = [];
+        let currentFilteredData = [];
+        let chartFreRealtime = null;
+        let chartCo2ProvinceRealtime = null;
+        let chartForestScatter = null;
+        let lastPipelineBase = null;
+        let pipelineAnimTimer = null;
+        let pipelineAnimStep = 0;
+        let pipelineStatsSnapshot = { nRaw: 0, nConfPass: 0, nChina: 0, nForest: 0, nView: 0 };
+
+        // 预警相关变量
+        let alertList = [];
+        let showAlertMode = true; // 默认显示红点
+
+        // 排放因子配置
+        const CR = 0.41; 
+        const EF_CO = 0.1045; 
+        const EF_CO2 = 1630; 
+        const EF_PM25 = 12.83; 
+        const EF_BC = 0.137; 
+        const MCMCO2 = 3.664; 
+
+        // ======================== 县级行政中心坐标 ========================
+        const COUNTY_CENTERS = [
+            { name: '昭通市', province: '云南', lat: 27.33, lng: 103.71 },
+            { name: '宜宾市', province: '四川', lat: 28.76, lng: 104.62 },
+            { name: '毕节市', province: '贵州', lat: 27.30, lng: 105.28 },
+            { name: '凉山州', province: '四川', lat: 27.89, lng: 102.22 },
+            { name: '大兴安岭', province: '黑龙江', lat: 52.33, lng: 124.71 },
+            { name: '昆明市', province: '云南', lat: 25.04, lng: 102.71 },
+            { name: '成都市', province: '四川', lat: 30.67, lng: 104.06 },
+            { name: '贵阳市', province: '贵州', lat: 26.58, lng: 106.71 },
+            { name: '哈尔滨市', province: '黑龙江', lat: 45.75, lng: 126.64 },
+            { name: '长春市', province: '吉林', lat: 43.88, lng: 125.32 },
+            { name: '沈阳市', province: '辽宁', lat: 41.80, lng: 123.43 },
+            { name: '石家庄市', province: '河北', lat: 38.04, lng: 114.50 },
+            { name: '太原市', province: '山西', lat: 37.86, lng: 112.55 },
+            { name: '呼和浩特市', province: '内蒙古', lat: 40.82, lng: 111.67 },
+            { name: '北京市', province: '北京', lat: 39.90, lng: 116.40 },
+            { name: '天津市', province: '天津', lat: 39.13, lng: 117.20 },
+            { name: '上海市', province: '上海', lat: 31.22, lng: 121.48 },
+            { name: '重庆市', province: '重庆', lat: 29.53, lng: 106.50 },
+            { name: '广州市', province: '广东', lat: 23.13, lng: 113.28 },
+            { name: '深圳市', province: '广东', lat: 22.55, lng: 114.05 },
+            { name: '南宁市', province: '广西', lat: 22.82, lng: 108.32 },
+            { name: '海口市', province: '海南', lat: 20.03, lng: 110.33 },
+            { name: '福州市', province: '福建', lat: 26.08, lng: 119.30 },
+            { name: '杭州市', province: '浙江', lat: 30.28, lng: 120.15 },
+            { name: '南京市', province: '江苏', lat: 32.04, lng: 118.77 },
+            { name: '合肥市', province: '安徽', lat: 31.86, lng: 117.28 },
+            { name: '南昌市', province: '江西', lat: 28.68, lng: 115.89 },
+            { name: '济南市', province: '山东', lat: 36.68, lng: 117.00 },
+            { name: '郑州市', province: '河南', lat: 34.76, lng: 113.67 },
+            { name: '武汉市', province: '湖北', lat: 30.58, lng: 114.30 },
+            { name: '长沙市', province: '湖南', lat: 28.19, lng: 112.98 },
+            { name: '西安市', province: '陕西', lat: 34.26, lng: 108.95 },
+            { name: '兰州市', province: '甘肃', lat: 36.06, lng: 103.82 },
+            { name: '西宁市', province: '青海', lat: 36.62, lng: 101.78 },
+            { name: '银川市', province: '宁夏', lat: 38.47, lng: 106.28 },
+            { name: '乌鲁木齐市', province: '新疆', lat: 43.79, lng: 87.62 },
+            { name: '拉萨市', province: '西藏', lat: 29.66, lng: 91.13 },
+            { name: '台北市', province: '台湾', lat: 25.04, lng: 121.51 },
+            { name: '香港', province: '香港', lat: 22.32, lng: 114.17 },
+            { name: '澳门', province: '澳门', lat: 22.20, lng: 113.55 },
+        ];
+
+        // 计算两点间距离（km）- 使用 Haversine 公式，不依赖 turf
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371; // 地球半径（km）
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // 新增：更新避免CO2排放显示
+        function updateAvoidedCO2(avoidedCO2) {
+            const avoidedEl = document.getElementById('avoidedCO2');
+            if (avoidedEl) {
+                const value = (avoidedCO2 / 10000).toFixed(1); // 转换为万吨
+                avoidedEl.innerText = value;
+                
+                // 更新汽车当量
+                const carEquivalent = document.querySelector('.stat-tag');
+                if (carEquivalent) {
+                    const cars = Math.round(avoidedCO2 / 4.6); // 每辆车年排放4.6吨
+                    carEquivalent.innerText = `≈ ${cars}万辆汽车年排放`;
+                }
+            }
+        }
+
+        function renderPipelineStep(step) {
+            const fill = document.getElementById('pipelineFill');
+            const label = document.getElementById('pipelineLabel');
+            const meta = document.getElementById('pipelineMeta');
+            if (!fill || !label || !meta) return;
+
+            const widths = [0, 18, 38, 60, 82, 100];
+            fill.style.width = `${widths[Math.max(0, Math.min(5, step))]}%`;
+            const s = pipelineStatsSnapshot || {};
+            const stageText = [
+                '准备处理火点数据',
+                `原始抓取：${s.nRaw || 0} 个火点`,
+                `置信度过滤后：${s.nConfPass || 0} 个火点`,
+                `境内筛选后：${s.nChina || 0} 个火点`,
+                `森林筛选后：${s.nForest || 0} 个火点`,
+                `最终可视化：${s.nView || 0} 个火点`
+            ];
+            label.innerHTML = stageText[Math.max(0, Math.min(5, step))];
+            meta.textContent = '';
+
+            const nodes = document.querySelectorAll('#pipelineNodes .pipeline-node');
+            nodes.forEach((node) => {
+                const nodeStep = Number(node.getAttribute('data-step') || 0);
+                node.classList.remove('active', 'pulse');
+                if (nodeStep <= pipelineAnimStep) node.classList.add('active');
+                if (nodeStep === pipelineAnimStep && pipelineAnimStep > 0) node.classList.add('pulse');
+            });
+        }
+
+        function startPipelineDemoAnimation() {
+            // 已切换为真实进度模式：不再自动播放演示动画
+            if (pipelineAnimTimer) clearTimeout(pipelineAnimTimer);
+            pipelineAnimTimer = null;
+            pipelineAnimStep = 0;
+            renderPipelineStep(0);
+        }
+
+        function updatePipelineUI(stats) {
+            if (!stats) return;
+            pipelineStatsSnapshot = {
+                nRaw: stats.nRaw || 0,
+                nConfPass: stats.nConfPass || 0,
+                nChina: stats.nChina || 0,
+                nForest: stats.nForest || 0,
+                nView: stats.nView || 0
+            };
+            renderPipelineStep(pipelineAnimStep);
+        }
+
+        function setPipelineStage(step) {
+            pipelineAnimStep = Math.max(0, Math.min(5, step));
+            renderPipelineStep(pipelineAnimStep);
+        }
+
+        function updateQualityUI(stats) {
+            const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+            if (!stats) return;
+            set('qHigh', stats.h || 0);
+            set('qMid', stats.n || 0);
+            set('qLow', stats.l || 0);
+            set('qConfDrop', stats.confDrop || 0);
+            set('qForestDrop', stats.forestDrop || 0);
+        }
+
+        function initOrResizeMiniCharts() {
+            const e1 = document.getElementById('chartFreRealtime');
+            const e2 = document.getElementById('chartCo2ProvinceRealtime');
+            const e3 = document.getElementById('chartForestScatter');
+            if (e1 && !chartFreRealtime) chartFreRealtime = echarts.init(e1);
+            if (e2 && !chartCo2ProvinceRealtime) chartCo2ProvinceRealtime = echarts.init(e2);
+            if (e3 && !chartForestScatter) chartForestScatter = echarts.init(e3);
+            chartFreRealtime && chartFreRealtime.resize();
+            chartCo2ProvinceRealtime && chartCo2ProvinceRealtime.resize();
+            chartForestScatter && chartForestScatter.resize();
+        }
+
+        function updateEmbeddedCharts(firePoints) {
+            const points = firePoints || [];
+            initOrResizeMiniCharts();
+            const provinceCount = {};
+            points.forEach(p => { if (p.province) provinceCount[p.province] = (provinceCount[p.province] || 0) + 1; });
+            const provSorted = Object.entries(provinceCount).sort((a, b) => b[1] - a[1]).slice(0, 12);
+            const frpTotal = points.reduce((s, p) => s + (p.frp || 0), 0);
+            const co2Total = frpTotal * CO2_PER_FRP;
+
+            if (chartFreRealtime) {
+                chartFreRealtime.setOption({
+                    title: { text: '实时总量', left: 'center', textStyle: { fontSize: 12 } },
+                    xAxis: { type: 'category', data: ['FRP(MW)', 'CO₂(t/h)'] },
+                    yAxis: { type: 'value' },
+                    grid: { left: '12%', right: '8%', top: '24%', bottom: '18%' },
+                    series: [{ type: 'bar', data: [Number(frpTotal.toFixed(1)), Number(co2Total.toFixed(1))], itemStyle: { color: '#2d6a4f' } }]
+                }, true);
+            }
+            if (chartCo2ProvinceRealtime) {
+                chartCo2ProvinceRealtime.setOption({
+                    title: { text: '各省火点数量 Top', left: 'center', textStyle: { fontSize: 12 } },
+                    tooltip: { trigger: 'axis' },
+                    grid: { left: '12%', right: '8%', top: '22%', bottom: '28%' },
+                    xAxis: { type: 'category', data: provSorted.map(x => x[0]), axisLabel: { rotate: 30, fontSize: 9 } },
+                    yAxis: { type: 'value' },
+                    series: [{ type: 'bar', data: provSorted.map(x => x[1]), itemStyle: { color: '#0077b6' } }]
+                }, true);
+            }
+            if (chartForestScatter) {
+                const scat = provSorted.map((x, idx) => [idx + 1, x[1], x[0]]);
+                chartForestScatter.setOption({
+                    title: { text: '省份分布散点', left: 'center', textStyle: { fontSize: 12 } },
+                    tooltip: { formatter: (p) => `${p.data[2]}<br/>火点数: ${p.data[1]}` },
+                    grid: { left: '12%', right: '8%', top: '22%', bottom: '18%' },
+                    xAxis: { type: 'value', name: '排名' },
+                    yAxis: { type: 'value', name: '火点数' },
+                    series: [{ type: 'scatter', data: scat, symbolSize: (d) => 8 + Math.min(20, d[1]), itemStyle: { color: '#2d6a4f' } }]
+                }, true);
+            }
+
+            // 给 fire-analysis 页面同步可复用快照（含森林筛选后的火点）
+            try {
+                localStorage.setItem('platformForestFireSnapshot', JSON.stringify({
+                    updatedAt: Date.now(),
+                    totalFires: points.length,
+                    firePoints: points.map(p => ({
+                        latitude: p.latitude,
+                        longitude: p.longitude,
+                        frp: p.frp,
+                        confidence: p.confidence,
+                        province: p.province,
+                        forestType: p.forestType || '混交林',
+                        acq_date: p.acq_date || '',
+                        acq_time: p.acq_time || ''
+                    }))
+                }));
+            } catch (e) { /* ignore */ }
+        }
+
+        function refreshPipelineView() {
+            if (!lastPipelineBase) return;
+            updatePipelineUI({ ...lastPipelineBase, nView: currentFilteredData.length });
+        }
+
+        // ======================== 预警计算逻辑 ========================
+        function calculateRiskScore(frp, distance) {
+            // 风险分数 = (FRP / 100) * (100 - 距离/10)
+            const score = (frp / 100) * (100 - distance / 10);
+            return Math.max(0, Math.min(100, score)); // 限制在0-100之间
+        }
+
+        function getAlertLevel(score) {
+            if (score >= 60) return { level: 'high', text: '🔴 高危', color: '#b91c1c', action: '立即组织扑救，疏散准备' };
+            if (score >= 30) return { level: 'medium', text: '🟠 中危', color: '#856404', action: '加强监测，准备应急物资' };
+            if (score >= 10) return { level: 'low', text: '🟡 低危', color: '#0f5132', action: '关注动态，定期巡查' };
+            return null;
+        }
+
+        function findNearestCounty(lat, lng) {
+            let minDist = Infinity;
+            let nearestCounty = null;
+            
+            COUNTY_CENTERS.forEach(county => {
+                const dist = calculateDistance(lat, lng, county.lat, county.lng);
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearestCounty = county;
+                }
+            });
+            
+            return { county: nearestCounty, distance: minDist };
+        }
+
+        function generateAlerts() {
+            if (!lastData || lastData.length === 0) {
+                return [];
+            }
+            
+            const newAlerts = [];
+            
+            lastData.forEach(fire => {
+                if (!fire.province) return;
+                
+                // 找到最近的县级行政中心
+                const { county, distance } = findNearestCounty(fire.latitude, fire.longitude);
+                if (!county) return;
+                
+                // 计算风险分数
+                const riskScore = calculateRiskScore(fire.frp, distance);
+                const alertInfo = getAlertLevel(riskScore);
+                
+                // 只有风险分≥10才生成预警
+                if (alertInfo) {
+                    newAlerts.push({
+                        id: `alert_${Date.now()}_${Math.random()}`,
+                        fireLat: fire.latitude,
+                        fireLng: fire.longitude,
+                        province: fire.province,
+                        county: county.name,
+                        frp: fire.frp,
+                        distance: distance.toFixed(1),
+                        riskScore: riskScore.toFixed(1),
+                        level: alertInfo.level,
+                        levelText: alertInfo.text,
+                        action: alertInfo.action,
+                        timestamp: new Date().toLocaleTimeString(),
+                        expires: new Date(Date.now() + 3 * 60 * 60 * 1000).toLocaleTimeString()
+                    });
+                }
+            });
+            
+            // 按风险分数降序排序
+            newAlerts.sort((a, b) => b.riskScore - a.riskScore);
+            
+            // 只保留前10条
+            return newAlerts.slice(0, 10);
+        }
+
+        function updateAlerts() {
+            const newAlerts = generateAlerts();
+            
+            if (newAlerts.length > 0) {
+                alertList = newAlerts;
+            }
+            
+            renderAlerts();
+            
+            // 如果处于预警显示模式，更新地图标记
+            if (showAlertMode) {
+                updateAlertMarkers();
+            }
+        }
+
+        function renderAlerts() {
+            const alertContainer = document.getElementById('alert-list');
+            const alertCount = document.getElementById('alert-count');
+            
+            if (!alertContainer) return;
+            
+            if (alertList.length === 0) {
+                alertContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #64748b;">✅ 当前无活跃预警</div>';
+                if (alertCount) alertCount.innerText = '0条新';
+                return;
+            }
+            
+            let html = '';
+            alertList.forEach(alert => {
+                html += `
+                    <div class="alert-item ${alert.level}" data-lat="${alert.fireLat}" data-lng="${alert.fireLng}" data-frp="${alert.frp}" data-province="${alert.province}" data-county="${alert.county}">
+                        <div class="alert-title">
+                            <span>${alert.levelText} ${alert.province}·${alert.county}</span>
+                            <span class="alert-badge">${alert.frp.toFixed(1)}MW</span>
+                        </div>
+                        <div class="alert-details">
+                            <div>📍 距离: ${alert.distance}km</div>
+                            <div>📊 风险: ${alert.riskScore}</div>
+                        </div>
+                        <div class="alert-action">💡 ${alert.action}</div>
+                        <div class="alert-time">
+                            <span>🕒 ${alert.timestamp}</span>
+                            <span>⏱️ 3h有效</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            alertContainer.innerHTML = html;
+            if (alertCount) alertCount.innerText = `${alertList.length}条新`;
+        }
+
+        function updateAlertMarkers() {
+            if (!myChart) {
+                console.log('地图未初始化');
+                return;
+            }
+            
+            // 获取高危火点
+            const highRiskPoints = alertList
+                .filter(alert => alert.level === 'high')
+                .map(alert => ({
+                    name: `${alert.province}·${alert.county}`,
+                    value: [alert.fireLng, alert.fireLat, alert.frp]
+                }));
+            
+            if (highRiskPoints.length === 0) return;
+            
+            // 创建新的散点系列
+            const scatterSeries = {
+                name: '高危预警',
+                type: 'scatter',
+                coordinateSystem: 'geo',
+                data: highRiskPoints,
+                symbol: 'circle',
+                symbolSize: 15,
+                itemStyle: {
+                    color: '#ef4444',
+                    shadowBlur: 10,
+                    shadowColor: '#ef4444',
+                    borderColor: '#ffffff',
+                    borderWidth: 1
+                },
+                label: {
+                    show: false
+                },
+                emphasis: {
+                    scale: 1.5,
+                    itemStyle: {
+                        color: '#ff0000',
+                        shadowBlur: 20
+                    }
+                },
+                zlevel: 10,
+                tooltip: {
+                    formatter: function(params) {
+                        return `<b>⚠️ 高危预警</b><br/>
+                                位置: ${params.name}<br/>
+                                FRP: ${params.value[2]?.toFixed(1) || 0}MW`;
+                    }
+                }
+            };
+            
+            // 获取当前选项
+            const option = myChart.getOption();
+            
+            // 确保series是数组
+            if (!option.series) {
+                option.series = [];
+            }
+            
+            // 移除旧的预警系列
+            if (Array.isArray(option.series)) {
+                option.series = option.series.filter(s => s && s.name !== '高危预警');
+            }
+            
+            // 添加新的预警系列
+            option.series.push(scatterSeries);
+            
+            // 设置新选项
+            myChart.setOption(option, { 
+                notMerge: false,
+                replaceMerge: ['series'] 
+            });
+        }
+
+        function removeAlertMarkers() {
+            if (!myChart) return;
+            
+            const option = myChart.getOption();
+            if (option.series) {
+                option.series = option.series.filter(s => s && s.name !== '高危预警');
+                myChart.setOption(option, { notMerge: false });
+            }
+        }
+
+        function toggleAlertMode(enable) {
+            showAlertMode = enable;
+            const btn = document.getElementById('show-alerts-btn');
+            
+            if (enable) {
+                btn.innerHTML = '<i class="fas fa-map-marker-alt"></i> 隐藏高危点';
+                btn.style.background = '#2d6a4f';
+                updateAlertMarkers();
+            } else {
+                btn.innerHTML = '<i class="fas fa-map-marker-alt"></i> 显示高危点';
+                btn.style.background = '#ef4444';
+                removeAlertMarkers();
+            }
+        }
+
+        // ======================== 核心几何算法 ========================
+        function assignProvinceToPointsPrecisely(points) {
+            const chinaMap = echarts.getMap('china');
+            if (!chinaMap || !chinaMap.geoJSON) {
+                console.warn("未能获取 ECharts 中国地图数据，使用降级逻辑");
+                return points;
+            }
+            const nationalGeoJson = chinaMap.geoJSON;
+
+            points.forEach(pt => {
+                pt.province = null;
+                
+                for (let i = 0; i < nationalGeoJson.features.length; i++) {
+                    const feature = nationalGeoJson.features[i];
+                    try {
+                        // 简化的点是否在多边形内的判断（射线法）
+                        if (isPointInPolygon(pt.longitude, pt.latitude, feature.geometry.coordinates)) {
+                            pt.province = feature.properties.name; 
+                            break; 
+                        }
+                    } catch (e) {
+                        // 忽略错误
+                    }
+                }
+            });
+            return points;
+        }
+
+        // 简化的射线法判断点是否在多边形内
+        function isPointInPolygon(lng, lat, coordinates) {
+            // 处理 MultiPolygon
+            let polygons = [];
+            if (coordinates[0][0] && typeof coordinates[0][0][0] === 'number') {
+                polygons = [coordinates];
+            } else {
+                polygons = coordinates;
+            }
+            
+            for (let poly of polygons) {
+                let inside = false;
+                for (let i = 0, j = poly[0].length - 1; i < poly[0].length; j = i++) {
+                    const xi = poly[0][i][0], yi = poly[0][i][1];
+                    const xj = poly[0][j][0], yj = poly[0][j][1];
+                    const intersect = ((yi > lat) != (yj > lat)) &&
+                        (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+                    if (intersect) inside = !inside;
+                }
+                if (inside) return true;
+            }
+            return false;
+        }
+
+        function getRealMetricForRegion(feature, firePoints, metricType) {
+            if (!firePoints || firePoints.length === 0) return 0;
+            
+            let regionTotalFrp = 0;
+            for (let i = 0; i < firePoints.length; i++) {
+                const pt = firePoints[i];
+                
+                try {
+                    if (isPointInPolygon(pt.longitude, pt.latitude, feature.geometry.coordinates)) {
+                        regionTotalFrp += pt.frp;
+                    }
+                } catch (e) {
+                    continue;
+                }
+            }
+
+            if (regionTotalFrp === 0) return 0;
+
+            const fre = regionTotalFrp * 3600;      
+            const m = fre * CR;                     
+            
+            switch(metricType) {
+                case 'FRP': return regionTotalFrp;
+                case 'FRE': return fre;
+                case 'M': return m;
+                case 'CO': return m * EF_CO;
+                case 'CO2': return m * EF_CO2;
+                case 'PM25': return m * EF_PM25;
+                case 'BC': return m * EF_BC;
+                default: return 0; 
+            }
+        }
+
+        // 返回全国按钮点击事件
+        document.getElementById('back-to-national').addEventListener('click', function() {
+            currentMapType = 'china';
+            this.style.display = 'none';
+            document.querySelector('#show-btn').click(); 
+        });
+
+        // ======================== 本地 GeoJSON 下钻（替代在线 API） ========================
+        // 目录结构约定：把所有行政区 GeoJSON 放在：
+        //   ./geojson/areas_v3/bound/{adcode}_full.json
+        // 部署到任意静态站点后即可直接访问这些文件（不再依赖阿里云接口/代理速度）。
+        const LOCAL_GEOJSON_BASE = './geojson/areas_v3/bound/';
+        const _geoJsonCacheByAdcode = new Map();
+        let _chinaMapInitPromise = null;
+
+        function getLocalGeoJsonUrlByAdcode(adcode, useFull = true) {
+            return `${LOCAL_GEOJSON_BASE}${adcode}${useFull ? '_full' : ''}.json`;
+        }
+
+        async function loadGeoJsonByAdcode(adcode) {
+            if (!adcode) throw new Error('adcode 为空，无法加载 GeoJSON');
+            if (_geoJsonCacheByAdcode.has(adcode)) return _geoJsonCacheByAdcode.get(adcode);
+
+            // 1) 优先从单文件 bundle 读取（支持 file:// 环境，无需 fetch）
+            // 约定：geojson.bundle.js 会注入 window.__GEOJSON_BUNDLE__ = { [adcode]: geojsonObject }
+            const bundle = (typeof window !== 'undefined') ? window.__GEOJSON_BUNDLE__ : undefined;
+            if (bundle && bundle[adcode]) {
+                const p0 = Promise.resolve(bundle[adcode]);
+                _geoJsonCacheByAdcode.set(adcode, p0);
+                return p0;
+            }
+
+            // 2) 没有 bundle 时，退回读取本地静态文件（需 http(s) 服务器环境）
+            //    优先读取 *_full.json；台湾（710000）若 full 不存在，则回退 710000.json
+            const fullUrl = getLocalGeoJsonUrlByAdcode(adcode, true);
+            const plainUrl = getLocalGeoJsonUrlByAdcode(adcode, false);
+            const p = fetch(fullUrl, { cache: 'force-cache' })
+                .then(res => {
+                    if (res.ok) return res.json();
+                    if (adcode === '710000') {
+                        return fetch(plainUrl, { cache: 'force-cache' }).then(res2 => {
+                            if (!res2.ok) throw new Error(`本地 GeoJSON 不存在: ${fullUrl} / ${plainUrl}`);
+                            return res2.json();
+                        });
+                    }
+                    throw new Error(`本地 GeoJSON 不存在或不可访问: ${fullUrl} (HTTP ${res.status})`);
+                });
+            _geoJsonCacheByAdcode.set(adcode, p);
+            return p;
+        }
+
+        function ensureChinaMapReady() {
+            if (_chinaMapInitPromise) return _chinaMapInitPromise;
+            // 保持全国层底图使用原始 china.js（省份名称位置最稳定，接近你理想效果）。
+            // 省/市/县下钻仍然走本地 GeoJSON，不受影响。
+            _chinaMapInitPromise = Promise.resolve(true);
+            return _chinaMapInitPromise;
+        }
+
+        // 绘图函数
+        function display_chart(getData, Max, Min, chartname, mapType = 'china') {
+            Max = Max || 0;
+            Min = Min || 0;
+            chartname = chartname || '';
+            
+            if (!myChart) {
+                myChart = echarts.init(document.querySelector('#viewMap'));
+                
+                myChart.on('click', function(params) {
+                    const provinceAdcodes = {
+                        '北京': '110000', '天津': '120000', '河北': '130000', '山西': '140000', '内蒙古': '150000',
+                        '辽宁': '210000', '吉林': '220000', '黑龙江': '230000',
+                        '上海': '310000', '江苏': '320000', '浙江': '330000', '安徽': '340000', '福建': '350000', '江西': '360000', '山东': '370000',
+                        '河南': '410000', '湖北': '420000', '湖南': '430000', '广东': '440000', '广西': '450000', '海南': '460000',
+                        '重庆': '500000', '四川': '510000', '贵州': '520000', '云南': '530000', '西藏': '540000',
+                        '陕西': '610000', '甘肃': '620000', '青海': '630000', '宁夏': '640000', '新疆': '650000',
+                        '台湾': '710000', '香港': '810000', '澳门': '820000'
+                    };
+                    const directMunicipalities = ['北京', '天津', '上海', '重庆', '香港', '澳门', '台湾'];
+                    const currentMetricType = document.querySelector('#choose_type').value;
+                    const currentChartName = document.querySelector('#choose_type').options[document.querySelector('#choose_type').selectedIndex].text;
+
+                    if (currentMapType === 'china' && provinceAdcodes[params.name]) {
+                        const adcode = provinceAdcodes[params.name];
+                        const provName = params.name;
+                        
+                        loadGeoJsonByAdcode(adcode)
+                            .then(geoJson => {
+                                echarts.registerMap(provName, geoJson);
+                                currentMapType = provName;
+                                
+                                let subData = geoJson.features.map(f => {
+                                    const realValue = getRealMetricForRegion(f, lastData, currentMetricType);
+                                    return {
+                                        name: f.properties.name,
+                                        value: realValue,
+                                        adcode: f.properties.adcode, 
+                                        level: directMunicipalities.includes(provName) ? 'district' : 'city' 
+                                    };
+                                });
+                                
+                                let max = subData.length > 0 ? Math.max(...subData.map(d => d.value)) : 0;
+                                let min = subData.length > 0 ? Math.min(...subData.map(d => d.value)) : 0;
+                                
+                                display_chart(subData, max, min, currentChartName, currentMapType);
+                                document.getElementById('back-to-national').style.display = 'block';
+                            })
+                            .catch(err => {
+                                console.error("获取省/市级地图数据失败:", err);
+                                alert("无法加载该省份的详细地图数据（本地 GeoJSON 缺失或未正确部署）");
+                            });
+                    } else if (params.data && params.data.adcode && params.data.level === 'city') {
+                        const adcode = params.data.adcode;
+                        const cityName = params.name;
+                        
+                        loadGeoJsonByAdcode(adcode)
+                            .then(geoJson => {
+                                echarts.registerMap(cityName, geoJson);
+                                currentMapType = cityName;
+                                
+                                let districtData = geoJson.features.map(f => {
+                                    const realValue = getRealMetricForRegion(f, lastData, currentMetricType);
+                                    return {
+                                        name: f.properties.name,
+                                        value: realValue,
+                                        adcode: f.properties.adcode,
+                                        level: 'district' 
+                                    };
+                                });
+                                
+                                let max = districtData.length > 0 ? Math.max(...districtData.map(d => d.value)) : 0;
+                                let min = districtData.length > 0 ? Math.min(...districtData.map(d => d.value)) : 0;
+                                
+                                display_chart(districtData, max, min, currentChartName, currentMapType);
+                            })
+                            .catch(err => {
+                                console.error("获取区县地图数据失败:", err);
+                                alert("无法加载该市的区/县级地图数据（本地 GeoJSON 缺失或未正确部署），或已是最小层级。");
+                            });
+                    }
+                });
+
+                window.addEventListener('resize', function() {
+                    myChart.resize();
+                });
+            }
+            
+            let titlePrefix = mapType === 'china' ? '省级行政区' : `${mapType}区域`;
+
+            let option = {
+                title: {
+                    text: `${titlePrefix}${chartname}核算`,
+                    left: 'center',
+                    top: '0',
+                    textStyle: {
+                        fontSize: 24,
+                        fontWeight: 'normal'
+                    },
+                },
+                backgroundColor: '#f8f9fa',
+                tooltip: {
+                    trigger: "item",
+                    formatter: function(params) {
+                        let val = typeof params.value === 'number' ? params.value.toFixed(2) : '0.00';
+                        return `${params.name}<br/>${chartname}：${val}`;
+                    }
+                },
+                visualMap: {
+                    type: 'continuous',
+                    min: Min - 1 < 0 ? 0 : Min - 1,
+                    max: Max === Min ? Max + 1 : Max + 1,
+                    range: [Min, Max === Min ? Max + 0.1 : Max],
+                    text: ["高值", "低值"],
+                    calculable: true,
+                    color: ['orangered', '#FFDB58', 'green'],
+                    left: 'left',
+                    bottom: 'bottom',
+                    textStyle: {
+                        color: '#000000',
+                        fontSize: 12
+                    },
+                },
+                series: [{
+                    type: 'map',
+                    map: mapType,
+                    label: {
+                        show: true,
+                        color: "#333",
+                        emphasis: {
+                            show: true,
+                            textStyle: { color: "#800080" }
+                        }
+                    },
+                    roam: true, 
+                    aspectScale: 0.75,
+                    data: getData
+                }]
+            };
+            
+            myChart.setOption(option, true);
+            
+            // 如果处于预警模式，添加标记
+            if (showAlertMode) {
+                setTimeout(updateAlertMarkers, 1000);
+            }
+        }
+
+        // ======================== 原有代码保持不变 ========================
+        let logCondition = false;
+        logRender();
+
+        function logRender() {
+            const username = localStorage.getItem('username');
+            var u = document.querySelector('#username'); if (u) u.innerText = username ? `用户: ${username}` : '';
+            var c = document.querySelector('#condition'); if (c) c.innerText = username ? '退出登录' : '登录';
+            var ub = document.querySelector('#updata-btn'); if (ub) { ub.disabled = !username; ub.innerText = username ? '修改数据' : '请先登录'; }
+        }
+
+        var userinforEl = document.querySelector('#userinfor');
+        if (userinforEl) userinforEl.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A') {
+                e.preventDefault();
+                if (localStorage.getItem('username')) {
+                    localStorage.removeItem('username');
+                    logRender();
+                } else {
+                    document.querySelector('#logIn').style.display = 'flex';
+                }
+            }
+        });
+
+        document.querySelector('#logform form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.querySelector('#login-username').value.trim();
+            const password = document.querySelector('#login-password').value.trim();
+            
+            if (!username) { alert('用户名不能为空！'); return; }
+            
+            localStorage.setItem('username', username);
+            document.querySelector('#logIn').style.display = 'none';
+            logRender();
+            alert(`欢迎 ${username} 登录！`);
+        });
+
+        document.querySelector('#login-back').addEventListener('click', function() {
+            document.querySelector('#logIn').style.display = 'none';
+        });
+
+        var dataBtn = document.querySelector('#Data');
+        if (dataBtn) dataBtn.addEventListener('click', function() {
+            document.querySelector('#data-operate').style.display = 'flex';
+        });
+
+        const valueobj = {
+            FRP: ['FRP'],
+            FRE: ['FRP', 'timeInterval', 'fireArea'],
+            M: ['FRE'],
+            CO: ['M'],
+            CO2: ['M'],
+            PM25: ['M'],
+            BC: ['M'],
+            LossCO2_C: ['LossCO2_C'],
+            LossCO2_CO2: ['LossC'],
+        };
+
+        let result_kuihua = JSON.parse(localStorage.getItem('result_kuihua')) || initProvinceData();
+
+        function initProvinceData() {
+            const provinces = [
+                '北京', '天津', '上海', '重庆', '河北', '山西', '辽宁', '吉林', '黑龙江',
+                '江苏', '浙江', '安徽', '福建', '江西', '山东', '河南', '湖北', '湖南',
+                '广东', '海南', '四川', '贵州', '云南', '陕西', '甘肃', '青海', '台湾',
+                '内蒙古', '广西', '西藏', '宁夏', '新疆', '香港', '澳门', '南海诸岛'
+            ];
+            
+            const dataObj = {};
+            Object.keys(valueobj).forEach(key => {
+                dataObj[key] = {};
+                provinces.forEach(prov => {
+                    dataObj[key][prov] = [0, '', ''];
+                });
+            });
+            
+            localStorage.setItem('result_kuihua', JSON.stringify(dataObj));
+            return dataObj;
+        }
+
+        function gettype() {
+            const select = document.querySelector('#v_type');
+            return select.options[select.selectedIndex].value;
+        }
+
+        let currentType = '';
+        document.querySelector('#updata-btn').addEventListener('click', function() {
+            if (!localStorage.getItem('username')) return;
+            
+            document.querySelector('#data-operate').style.display = 'none';
+            document.querySelector('#formDiv').style.display = 'flex';
+            currentType = gettype();
+            
+            let formHTML = `<select id="citychoose">${document.querySelector('#citychoose').innerHTML}</select>`;
+            valueobj[currentType].forEach(field => {
+                formHTML += `
+                <div>
+                    <input class='input-style' placeholder='请输入${field}' data-field="${field}">
+                    <span class='input-infor'></span>
+                </div>
+                `;
+            });
+            formHTML += `
+                <button type="submit">确认修改</button>
+                <button type="button" id='updata-cancel-btn'>返回</button>
+            `;
+            
+            document.querySelector('#update-form').innerHTML = formHTML;
+            
+            document.querySelector('#updata-cancel-btn').addEventListener('click', function() {
+                document.querySelector('#formDiv').style.display = 'none';
+                document.querySelector('#data-operate').style.display = 'flex';
+            });
+            
+            document.querySelectorAll('#update-form input').forEach(input => {
+                input.addEventListener('blur', function() { testform(this); });
+            });
+        });
+
+        document.querySelector('#update-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const inputs = document.querySelectorAll('#update-form input');
+            const citySelect = document.querySelector('#citychoose');
+            const cityName = citySelect.options[citySelect.selectedIndex].text;
+            
+            let isValid = true;
+            inputs.forEach(input => {
+                if (!testform(input) || input.value.trim() === '') { isValid = false; }
+            });
+            
+            if (!isValid) { alert('输入不可为空或存在非法输入！'); return; }
+            
+            const typeText = document.querySelector(`#v_type option[value="${currentType}"]`).text;
+            if (!confirm(`确定要修改${cityName}的${typeText}数据吗？`)) return;
+            
+            const values = Array.from(inputs).map(input => parseFloat(input.value));
+            const username = localStorage.getItem('username');
+            const updateTime = new Date().toLocaleString();
+            
+            const calcResult = Culculate[currentType](values);
+            result_kuihua[currentType][cityName] = [calcResult, username, updateTime];
+            
+            localStorage.setItem('result_kuihua', JSON.stringify(result_kuihua));
+            
+            this.reset();
+            document.querySelectorAll('.input-infor').forEach(span => { span.innerText = ''; });
+            
+            alert('数据修改成功！');
+            document.querySelector('#formDiv').style.display = 'none';
+            document.querySelector('#data-operate').style.display = 'flex';
+            document.querySelector('#show-btn').click(); 
+        });
+
+        document.querySelector('#oprate-cancel-btn').addEventListener('click', function() {
+            document.querySelector('#data-operate').style.display = 'none';
+        });
+
+        document.querySelector('#import-btn').addEventListener('click', function() {
+            document.querySelector('#importData').style.display = 'block';
+            document.querySelector('#data-operate').style.display = 'none';
+        });
+
+        document.querySelector('#importclose').addEventListener('click', function() {
+            document.querySelector('#importData').style.display = 'none';
+            document.querySelector('#data-operate').style.display = 'flex';
+        });
+
+        function testform(input) {
+            const regex = /^-?\d*\.?\d+$/;
+            const infoSpan = input.nextElementSibling;
+            
+            if (regex.test(input.value.trim())) {
+                infoSpan.className = 'input-infor ture-input';
+                infoSpan.innerText = '输入正确';
+                return true;
+            } else {
+                infoSpan.className = 'input-infor fault-input';
+                infoSpan.innerText = '请输入数字';
+                return false;
+            }
+        }
+
+        var timer1, timer2;
+        var displayBtn = document.querySelector('#Display');
+        if (displayBtn) {
+            displayBtn.addEventListener('mouseenter', function() {
+                clearTimeout(timer1);
+                document.querySelector('#display-choose').style.display = 'flex';
+            });
+            displayBtn.addEventListener('mouseleave', function() {
+                timer1 = setTimeout(() => { document.querySelector('#display-choose').style.display = 'none'; }, 300);
+            });
+            var displayChoose = document.querySelector('#display-choose');
+            if (displayChoose) {
+                displayChoose.addEventListener('mouseenter', function() {
+                    clearTimeout(timer1); clearTimeout(timer2); this.style.display = 'flex';
+                });
+                displayChoose.addEventListener('mouseleave', function() {
+                    timer2 = setTimeout(() => { this.style.display = 'none'; }, 500);
+                });
+            }
+        }
+
+        document.querySelector('#show-btn').addEventListener('click', function() {
+            if (currentMapType !== 'china') {
+                currentMapType = 'china';
+                document.getElementById('back-to-national').style.display = 'none';
+            }
+
+            const dataType = document.querySelector('#choose_type').value;
+            const data = JSON.parse(localStorage.getItem('result_kuihua')) || result_kuihua;
+            
+            const showData = Object.entries(data[dataType]).map(([name, value]) => {
+                return { name, value: value[0] };
+            });
+            
+            const values = showData.map(item => item.value);
+            const max = values.length > 0 ? Math.max(...values) : 0;
+            const min = values.length > 0 ? Math.min(...values) : 0;
+            const typeName = document.querySelector(`#choose_type option[value="${dataType}"]`).text;
+            
+            display_chart(showData, max, min, typeName, 'china');
+        });
+
+        document.querySelector('#query-btn').addEventListener('click', function() {
+            document.querySelector('#data-operate').style.display = 'none';
+            document.querySelector('#displayData').style.display = 'flex';
+            
+            const dataType = gettype();
+            const data = JSON.parse(localStorage.getItem('result_kuihua')) || result_kuihua;
+            const typeName = document.querySelector(`#v_type option[value="${dataType}"]`).text;
+            
+            document.querySelector('#displayData span').innerText = `${typeName} 数据列表`;
+            
+            const tableBody = document.querySelector('#displayData tbody');
+            tableBody.innerHTML = '';
+            
+            Object.entries(data[dataType]).forEach(([city, [value, editor, time]]) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${city}</td>
+                    <td>${value.toFixed(2)}</td>
+                    <td>${editor || '系统默认'}</td>
+                    <td>${time || '-'}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        });
+
+        document.querySelector('#display-cancel-btn').addEventListener('click', function() {
+            document.querySelector('#data-operate').style.display = 'flex';
+            document.querySelector('#displayData').style.display = 'none';
+        });
+
+        const Culculate = {
+            FRP(arr) { const [FRP] = arr; return FRP; },
+            FRE(arr) { const [FRP, timeInterval, fireArea] = arr; return FRP * timeInterval * fireArea; },
+            M(arr) { const [FRE_value] = arr; return FRE_value * CR; },
+            CO(arr) { const [M_value] = arr; return M_value * EF_CO; },
+            CO2(arr) { const [M_value] = arr; return M_value * EF_CO2; },
+            PM25(arr) { const [M_value] = arr; return M_value * EF_PM25; },
+            BC(arr) { const [M_value] = arr; return M_value * EF_BC; },
+            LossCO2_C(arr) { const [LossC] = arr; return LossC; },
+            LossCO2_CO2(arr) { const [LossC] = arr; return LossC * MCMCO2; }
+        };
+
+        function updateProvinceFRPData(firePoints) {
+            const provinceFRP = {};
+            firePoints.forEach(p => {
+                if (p.province) {
+                    provinceFRP[p.province] = (provinceFRP[p.province] || 0) + p.frp;
+                }
+            });
+
+            const username = localStorage.getItem('username') || 'NASA实时接口';
+            const updateTime = new Date().toLocaleString();
+            const allProvinces = Object.keys(result_kuihua.FRP);
+            
+            allProvinces.forEach(prov => {
+                const frp = provinceFRP[prov] || 0; 
+                const fre = frp * 3600;      
+                const m = fre * CR;          
+                const co = m * EF_CO;        
+                const co2 = m * EF_CO2;      
+                const pm25 = m * EF_PM25;    
+                const bc = m * EF_BC;        
+
+                result_kuihua.FRP[prov] = [frp, username, updateTime];
+                result_kuihua.FRE[prov] = [fre, username, updateTime];
+                result_kuihua.M[prov] = [m, username, updateTime];
+                result_kuihua.CO[prov] = [co, username, updateTime];
+                result_kuihua.CO2[prov] = [co2, username, updateTime];
+                result_kuihua.PM25[prov] = [pm25, username, updateTime];
+                result_kuihua.BC[prov] = [bc, username, updateTime];
+            });
+
+            localStorage.setItem('result_kuihua', JSON.stringify(result_kuihua));
+
+            if (currentMapType === 'china') {
+                const showBtn = document.querySelector('#show-btn');
+                if (showBtn) showBtn.click();
+            }
+        }
+
+        const NASA_API_KEY = '6123d227fc37ab449f50d9d48db08c76';
+        const CHINA_BBOX = '73,18,135,54';
+
+        const fireCountEl = document.getElementById('fireCount');
+        const totalFrpEl = document.getElementById('totalFrp');
+        const totalCo2El = document.getElementById('totalCo2');
+        const totalPm25El = document.getElementById('totalPm25');
+        const tableBody = document.getElementById('tableBody');
+        const updateTimeEl = document.getElementById('updateTime');
+        const errorDisplay = document.getElementById('errorDisplay');
+        const provinceFilter = document.getElementById('provinceFilter');
+
+        const CO2_PER_FRP = 0.15;
+        const PM25_PER_CO2 = 0.08;
+
+        function hideError() { errorDisplay.style.display = 'none'; }
+        function showError(msg) { errorDisplay.textContent = msg; errorDisplay.style.display = 'block'; }
+
+        function formatUTCTime(dateStr, timeStr) {
+            if (!dateStr || !timeStr) return '未知';
+            const year = dateStr.substring(0,4), month = dateStr.substring(5,7), day = dateStr.substring(8,10);
+            const hour = timeStr.substring(0,2), minute = timeStr.substring(2,4);
+            return `${year}-${month}-${day} ${hour}:${minute} UTC`;
+        }
+
+        function updateProvinceFilter() {
+            const provinces = new Set();
+            lastData.forEach(p => { if (p.province) provinces.add(p.province); });
+            
+            const sortedProvinces = Array.from(provinces).sort();
+            const currentValue = provinceFilter.value;
+            
+            provinceFilter.innerHTML = '<option value="all">全部省份</option>';
+            sortedProvinces.forEach(prov => {
+                const option = document.createElement('option');
+                option.value = prov; option.textContent = prov;
+                provinceFilter.appendChild(option);
+            });
+            
+            if (currentValue !== 'all' && sortedProvinces.includes(currentValue)) {
+                provinceFilter.value = currentValue;
+            }
+        }
+
+        function applyProvinceFilter() {
+            const selectedProvince = provinceFilter.value;
+            if (selectedProvince === 'all') {
+                currentFilteredData = [...lastData];
+            } else {
+                currentFilteredData = lastData.filter(p => p.province === selectedProvince);
+            }
+            updateStats(currentFilteredData);
+            updateFilteredTable(currentFilteredData);
+            refreshPipelineView();
+            updateEmbeddedCharts(currentFilteredData);
+        }
+
+        function updateStats(firePoints) {
+            const count = firePoints.length;
+            const totalFrp = firePoints.reduce((sum, p) => sum + (p.frp || 0), 0).toFixed(1);
+            const totalCo2 = (totalFrp * CO2_PER_FRP).toFixed(1);
+            const totalPm25 = (totalCo2 * PM25_PER_CO2).toFixed(1);
+
+            fireCountEl.innerText = count;
+            totalFrpEl.innerText = totalFrp;
+            totalCo2El.innerText = totalCo2;
+            totalPm25El.innerText = totalPm25;
+        }
+
+        function updateFilteredTable(firePoints) {
+            if (firePoints.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无火点数据</td></tr>';
+                return;
+            }
+
+            let html = '';
+            const recent = firePoints.slice(0, 10);
+            recent.forEach(p => {
+                const timeStr = formatUTCTime(p.acq_date, p.acq_time);
+                const co2 = (p.frp * CO2_PER_FRP).toFixed(1);
+                html += `<tr>
+                    <td>${p.longitude.toFixed(5)}</td>
+                    <td>${p.latitude.toFixed(5)}</td>
+                    <td>${p.frp?.toFixed(1) || '--'}</td>
+                    <td>${co2}</td>
+                    <td>${timeStr}</td>
+                    <td>${p.province || '--'}</td>
+                </tr>`;
+            });
+            if (firePoints.length > 10) {
+                html += `<tr><td colspan="6" style="text-align:center; color:#6b6b6b;">仅显示最近10条，共 ${firePoints.length} 条火点</td></tr>`;
+            }
+            tableBody.innerHTML = html;
+        }
+
+        function updateTimestamp() {
+            const now = new Date();
+            const str = now.toLocaleString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: false });
+            updateTimeEl.innerText = '最后更新: ' + str;
+        }
+
+        // ====================== 生成 1843 个逼真假数据的函数 ======================
+        function generateMockFireData(count = 1843) {
+            const points = [];
+            
+            // 各省的详细经纬度范围（基于真实火点分布数据优化）
+            const provinceRegions = [
+                { name: '云南', minLat: 21.5, maxLat: 28.2, minLon: 97.5, maxLon: 106.2, weight: 0.23, hotspot: { lat: [25.0, 27.5], lon: [100.5, 103.5] } },
+                { name: '四川', minLat: 26.0, maxLat: 33.0, minLon: 97.5, maxLon: 108.5, weight: 0.19, hotspot: { lat: [27.5, 29.5], lon: [101.5, 104.5] } },
+                { name: '黑龙江', minLat: 43.5, maxLat: 53.5, minLon: 121.5, maxLon: 134.0, weight: 0.14, hotspot: { lat: [48.0, 52.0], lon: [123.0, 128.0] } },
+                { name: '内蒙古', minLat: 37.5, maxLat: 53.0, minLon: 97.0, maxLon: 125.0, weight: 0.09, hotspot: { lat: [44.0, 50.0], lon: [115.0, 122.0] } },
+                { name: '广西', minLat: 21.0, maxLat: 26.5, minLon: 104.5, maxLon: 112.0, weight: 0.09, hotspot: { lat: [23.0, 25.5], lon: [106.5, 109.5] } },
+                { name: '贵州', minLat: 24.5, maxLat: 29.0, minLon: 103.5, maxLon: 109.5, weight: 0.08, hotspot: { lat: [25.5, 27.8], lon: [104.5, 107.5] } },
+                { name: '广东', minLat: 20.2, maxLat: 25.2, minLon: 109.5, maxLon: 117.2, weight: 0.05, hotspot: { lat: [22.0, 24.5], lon: [112.0, 115.0] } },
+                { name: '福建', minLat: 23.5, maxLat: 28.0, minLon: 115.8, maxLon: 120.5, weight: 0.04, hotspot: { lat: [24.5, 26.5], lon: [116.5, 118.5] } },
+                { name: '湖南', minLat: 24.5, maxLat: 30.0, minLon: 108.5, maxLon: 114.0, weight: 0.03, hotspot: { lat: [26.0, 28.5], lon: [110.0, 112.5] } },
+                { name: '江西', minLat: 24.5, maxLat: 30.0, minLon: 113.5, maxLon: 118.5, weight: 0.02, hotspot: { lat: [26.0, 28.0], lon: [114.5, 116.5] } },
+                { name: '重庆', minLat: 28.0, maxLat: 31.5, minLon: 105.5, maxLon: 110.0, weight: 0.02, hotspot: { lat: [29.0, 30.5], lon: [106.5, 108.5] } },
+                { name: '陕西', minLat: 31.5, maxLat: 36.5, minLon: 105.5, maxLon: 110.5, weight: 0.01, hotspot: { lat: [33.0, 35.0], lon: [107.0, 109.0] } },
+                { name: '甘肃', minLat: 32.5, maxLat: 42.5, minLon: 92.5, maxLon: 108.5, weight: 0.01, hotspot: { lat: [33.5, 38.5], lon: [104.0, 107.0] } }
+            ];
+
+            for (let i = 0; i < count; i++) {
+                // 按权重随机选择省份
+                const rand = Math.random();
+                let cumulative = 0;
+                let region = provinceRegions[0];
+                for (const r of provinceRegions) {
+                    cumulative += r.weight;
+                    if (rand <= cumulative) {
+                        region = r;
+                        break;
+                    }
+                }
+
+                // 70% 的火点集中在热点区域，30% 分散在省内其他区域
+                let lat, lon;
+                const isHotspot = Math.random() < 0.7;
+                
+                if (isHotspot && region.hotspot) {
+                    // 热点区域集中分布
+                    lat = region.hotspot.lat[0] + Math.random() * (region.hotspot.lat[1] - region.hotspot.lat[0]);
+                    lon = region.hotspot.lon[0] + Math.random() * (region.hotspot.lon[1] - region.hotspot.lon[0]);
+                } else {
+                    // 全省范围随机分布
+                    lat = region.minLat + Math.random() * (region.maxLat - region.minLat);
+                    lon = region.minLon + Math.random() * (region.maxLon - region.minLon);
+                }
+                
+                // FRP 值：模拟真实分布（对数正态分布效果）
+                let frp;
+                const r = Math.random();
+                if (r < 0.05) {
+                    // 5% 极高强度火点 300-800 MW
+                    frp = 300 + Math.random() * 500;
+                } else if (r < 0.15) {
+                    // 10% 高强度火点 150-300 MW
+                    frp = 150 + Math.random() * 150;
+                } else if (r < 0.40) {
+                    // 25% 中高强度火点 60-150 MW
+                    frp = 60 + Math.random() * 90;
+                } else if (r < 0.75) {
+                    // 35% 中等强度火点 25-60 MW
+                    frp = 25 + Math.random() * 35;
+                } else {
+                    // 25% 低强度火点 8-25 MW
+                    frp = 8 + Math.random() * 17;
+                }
+                
+                // 时间戳：随机分布在过去72小时内，更真实
+                const hoursAgo = Math.floor(Math.random() * 72);
+                const timeDate = new Date(Date.now() - hoursAgo * 60 * 60 * 1000);
+                const acq_date = timeDate.toISOString().split('T')[0];
+                const acq_time = timeDate.toISOString().split('T')[1].substring(0, 5).replace(':', '');
+                
+                // 置信度：高置信度火点占 40%，正常占 45%，低占 15%
+                let conf;
+                const confRand = Math.random();
+                if (confRand < 0.4) conf = 'h';
+                else if (confRand < 0.85) conf = 'n';
+                else conf = 'l';
+
+                points.push({
+                    latitude: Number(lat.toFixed(6)),
+                    longitude: Number(lon.toFixed(6)),
+                    frp: Number(frp.toFixed(2)),
+                    confidence: conf,
+                    acq_date: acq_date,
+                    acq_time: acq_time,
+                    province: region.name
+                });
+            }
+            
+            // 按时间排序，最新的在前
+            points.sort((a, b) => {
+                const dateA = new Date(`${a.acq_date}T${a.acq_time.substring(0,2)}:${a.acq_time.substring(2,4)}:00`);
+                const dateB = new Date(`${b.acq_date}T${b.acq_time.substring(0,2)}:${b.acq_time.substring(2,4)}:00`);
+                return dateB - dateA;
+            });
+            
+            return points;
+        }
+
+        // 直接使用假数据（用于演示模式）
+        function useDemoData() {
+            console.log('📊 使用演示模式，生成 1843 个火点数据');
+            showError('⚠️ 网络连接失败，已切换至演示模式（显示 1843 个模拟火点）');
+            setPipelineStage(1);
+            
+            // 生成 1843 个模拟火点
+            const validChinaPoints = generateMockFireData(1843);
+            setPipelineStage(3);
+            
+            // 碳数据计算
+            if (typeof CarbonCalculator !== 'undefined') {
+                const carbonResults = CarbonCalculator.processFireData(validChinaPoints);
+                window.carbonResults = carbonResults;
+                updateAvoidedCO2(carbonResults.totalAvoidedCO2);
+                
+                CarbonCalculator.fetchCarbonPrice().then(price => {
+                    window.currentCarbonPrice = price;
+                    const value = (carbonResults.totalAvoidedCO2 * price).toFixed(1);
+                    const creditEl = document.getElementById('carbonCredit');
+                    if (creditEl) creditEl.innerText = value;
+                    
+                    const event = new CustomEvent('carbonDataUpdated', { 
+                        detail: { 
+                            avoidedCO2: carbonResults.totalAvoidedCO2,
+                            price: price,
+                            value: value,
+                            byProvince: carbonResults.byProvince
+                        } 
+                    });
+                    window.dispatchEvent(event);
+                }).catch(err => console.warn("获取碳价失败: ", err));
+            }
+            
+            const finalPoints = (typeof CarbonCalculator !== 'undefined' && CarbonCalculator.enrichForestFirePoints)
+                ? CarbonCalculator.enrichForestFirePoints(validChinaPoints)
+                : validChinaPoints.map(p => ({ ...p, forestType: p.forestType || '混交林' }));
+
+            lastData = finalPoints;
+            currentFilteredData = [...finalPoints];
+            const h = finalPoints.filter(p => p.confidence === 'h').length;
+            const n = finalPoints.filter(p => p.confidence === 'n').length;
+            const l = finalPoints.filter(p => p.confidence === 'l').length;
+            lastPipelineBase = { nRaw: validChinaPoints.length, nConfPass: validChinaPoints.length, nChina: validChinaPoints.length, nForest: finalPoints.length };
+            updatePipelineUI({ ...lastPipelineBase, nView: finalPoints.length });
+            updateQualityUI({ h, n, l, confDrop: 0, forestDrop: 0 });
+            
+            updateProvinceFilter();
+            applyProvinceFilter();
+            updateTimestamp();
+            
+            updateProvinceFRPData(finalPoints);
+            updateAlerts();
+            setPipelineStage(5);
+        }
+
+        // ====================== 自动切换模式：先尝试真实数据，失败则用演示数据 ======================
+        function fetchFireDataFromFIRMS() {
+            hideError();
+            console.log('🌐 尝试连接 NASA 服务器获取真实火点数据...');
+            showError('⏳ 正在连接 NASA 服务器，获取实时火点数据...');
+            setPipelineStage(1);
+            
+            // 跨域代理列表
+            const proxies = [
+                'https://api.codetabs.com/v1/proxy?quest=',
+                'https://corsproxy.io/?',
+                'https://thingproxy.freeboard.io/fetch/'
+            ];
+            
+            const nasaUrl = `https://firms.modaps.eosdis.nasa.gov/api/area/csv/${NASA_API_KEY}/VIIRS_SNPP_NRT/${CHINA_BBOX}/1`;
+            
+            let proxyIndex = 0;
+            let allProxiesFailed = true;
+            
+            function tryProxy() {
+                if (proxyIndex >= proxies.length) {
+                    if (allProxiesFailed) {
+                        console.warn('❌ 所有代理均失败，切换到演示模式');
+                        useDemoData();
+                    }
+                    return;
+                }
+                
+                const proxyUrl = proxies[proxyIndex] + encodeURIComponent(nasaUrl);
+                console.log(`📡 尝试代理 ${proxyIndex + 1}/${proxies.length}: ${proxies[proxyIndex]}`);
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                
+                fetch(proxyUrl, { signal: controller.signal, method: 'GET' })
+                    .then(res => {
+                        clearTimeout(timeoutId);
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        return res.text();
+                    })
+                    .then(text => {
+                        if (!text || text.trim().split('\n').length <= 1) {
+                            throw new Error('无火点数据');
+                        }
+                        setPipelineStage(2);
+                        
+                        const lines = text.trim().split('\n');
+                        const header = lines[0].toLowerCase().split(',');
+                        const latIdx = header.indexOf('latitude');
+                        const lonIdx = header.indexOf('longitude');
+                        const frpIdx = header.indexOf('frp');
+                        const confIdx = header.indexOf('confidence');
+                        const dateIdx = header.indexOf('acq_date');
+                        const timeIdx = header.indexOf('acq_time');
+                        
+                        if (latIdx === -1 || lonIdx === -1 || frpIdx === -1) {
+                            throw new Error('数据格式错误');
+                        }
+                        
+                        const rawPoints = [];
+                        for (let i = 1; i < lines.length; i++) {
+                            const cols = lines[i].split(',');
+                            if (cols.length < header.length) continue;
+                            
+                            const lat = parseFloat(cols[latIdx]);
+                            const lon = parseFloat(cols[lonIdx]);
+                            const frp = parseFloat(cols[frpIdx]) || 0;
+                            const conf = cols[confIdx] || 'n';
+                            const acq_date = cols[dateIdx];
+                            const acq_time = cols[timeIdx];
+                            
+                            if (!isFinite(lat) || !isFinite(lon) || frp <= 0) continue;
+                            if (!['h', 'n', 'l'].includes(conf)) continue;
+                            
+                            rawPoints.push({
+                                latitude: lat, longitude: lon, frp: frp, confidence: conf,
+                                acq_date: acq_date, acq_time: acq_time, province: null
+                            });
+                        }
+                        
+                        if (rawPoints.length === 0) {
+                            throw new Error('无有效火点');
+                        }
+                        setPipelineStage(3);
+                        
+                        // 精确匹配省份
+                        const assignedPoints = assignProvinceToPointsPrecisely(rawPoints);
+                        const validChinaPoints = assignedPoints.filter(p => p.province !== null);
+                        
+                        if (validChinaPoints.length === 0) {
+                            throw new Error('无中国境内火点');
+                        }
+                        setPipelineStage(4);
+                        
+                        console.log(`✅ 成功获取真实火点数据，共 ${validChinaPoints.length} 个火点`);
+                        showError(`✅ 真实数据模式：已获取 ${validChinaPoints.length} 个火点（NASA FIRMS）`);
+                        
+                        // 碳数据计算
+                        if (typeof CarbonCalculator !== 'undefined') {
+                            const carbonResults = CarbonCalculator.processFireData(validChinaPoints);
+                            window.carbonResults = carbonResults;
+                            updateAvoidedCO2(carbonResults.totalAvoidedCO2);
+                            
+                            CarbonCalculator.fetchCarbonPrice().then(price => {
+                                window.currentCarbonPrice = price;
+                                const value = (carbonResults.totalAvoidedCO2 * price).toFixed(1);
+                                const creditEl = document.getElementById('carbonCredit');
+                                if (creditEl) creditEl.innerText = value;
+                                
+                                const event = new CustomEvent('carbonDataUpdated', { 
+                                    detail: { 
+                                        avoidedCO2: carbonResults.totalAvoidedCO2,
+                                        price: price,
+                                        value: value,
+                                        byProvince: carbonResults.byProvince
+                                    } 
+                                });
+                                window.dispatchEvent(event);
+                            }).catch(err => console.warn("获取碳价失败: ", err));
+                        }
+                        
+                        const finalPoints = (typeof CarbonCalculator !== 'undefined' && CarbonCalculator.enrichForestFirePoints)
+                            ? CarbonCalculator.enrichForestFirePoints(validChinaPoints)
+                            : validChinaPoints.map(p => ({ ...p, forestType: p.forestType || '混交林' }));
+
+                        lastData = finalPoints;
+                        currentFilteredData = [...finalPoints];
+                        const h = finalPoints.filter(p => p.confidence === 'h').length;
+                        const n = finalPoints.filter(p => p.confidence === 'n').length;
+                        const l = finalPoints.filter(p => p.confidence === 'l').length;
+                        lastPipelineBase = { nRaw: rawPoints.length, nConfPass: rawPoints.length, nChina: validChinaPoints.length, nForest: finalPoints.length };
+                        updatePipelineUI({ ...lastPipelineBase, nView: finalPoints.length });
+                        updateQualityUI({ h, n, l, confDrop: Math.max(0, rawPoints.length - validChinaPoints.length), forestDrop: Math.max(0, validChinaPoints.length - finalPoints.length) });
+                        
+                        updateProvinceFilter();
+                        applyProvinceFilter();
+                        updateTimestamp();
+                        updateProvinceFRPData(finalPoints);
+                        updateAlerts();
+                        // 数据真正渲染到界面后，再推进到最终节点
+                        setPipelineStage(5);
+                        
+                        allProxiesFailed = false;
+                    })
+                    .catch(err => {
+                        clearTimeout(timeoutId);
+                        console.warn(`⚠️ 代理 ${proxyIndex + 1} 失败:`, err.message);
+                        proxyIndex++;
+                        tryProxy();
+                    });
+            }
+            
+            tryProxy();
+        }
+
+        provinceFilter.addEventListener('change', applyProvinceFilter);
+
+        window.addEventListener('load', function() {
+            startPipelineDemoAnimation();
+            // 优先使用同源 100000_full.json 注册全国底图，避免省份标签中心点偏移
+            ensureChinaMapReady().finally(() => {
+                // ECharts 初始化后先构建空地图框架
+                document.querySelector('#show-btn').click();
+            });
+            
+            // 绑定预警按钮事件
+            document.getElementById('show-alerts-btn')?.addEventListener('click', function() {
+                toggleAlertMode(!showAlertMode);
+            });
+            
+            document.getElementById('refresh-alerts-btn')?.addEventListener('click', function() {
+                updateAlerts();
+            });
+            
+            // 抓取并利用 ECharts 内部几何边界同步真实 NASA 数据（自动切换模式）
+            fetchFireDataFromFIRMS();
+            setInterval(fetchFireDataFromFIRMS, 10 * 60 * 1000);
+            
+            // 每5分钟更新预警
+            setInterval(updateAlerts, 5 * 60 * 1000);
+        });
+    </script>
+</body>
+</html>

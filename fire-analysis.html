@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>火灾碳排分析 | 林火碳卫士—基于VIIRS卫星高精度森林火灾碳排放实时核算与预警系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root { --primary-green:#2d6a4f; --accent-blue:#0077b6; --accent-orange:#e76f51; --bg-light:#f8fafc; --panel-white:#ffffff; --text-dark:#1e293b; }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:"Microsoft YaHei", sans-serif; }
+        body { background-color:var(--bg-light); color:var(--text-dark); min-height:100vh; display:flex; flex-direction:column; }
+        .navbar { height:64px; background:linear-gradient(180deg,#fff 0%,#f8fafc 100%); display:flex; align-items:center; justify-content:space-between; padding:0 32px; border-bottom:1px solid #e2e8f0; box-shadow:0 1px 3px rgba(45,106,79,0.08); flex-shrink:0; }
+        .nav-brand { font-size:16px; font-weight:600; color:var(--primary-green); display:flex; align-items:center; gap:10px; letter-spacing:0.02em; }
+        .nav-menu { display:flex; align-items:center; gap:6px; }
+        .nav-item { padding:10px 18px; border-radius:10px; font-size:14px; font-weight:500; transition:all .25s ease; color:#64748b; text-decoration:none; border:1px solid transparent; }
+        .nav-item:hover { background:rgba(45,106,79,0.08); color:var(--primary-green); }
+        .nav-item.active { background:linear-gradient(135deg,var(--primary-green) 0%,#1b4332 100%); color:#fff; box-shadow:0 2px 8px rgba(45,106,79,0.3); }
+        .main { flex:1; max-width:1400px; margin:0 auto; padding:32px 24px; width:100%; }
+        .page-title { font-size:24px; font-weight:600; color:var(--primary-green); margin-bottom:28px; display:flex; align-items:center; gap:10px; }
+        .control-panel { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px; margin-bottom:24px; }
+        .control-card { background:var(--panel-white); border-radius:12px; padding:20px; border:1px solid #e2e8f0; box-shadow:0 2px 8px rgba(0,0,0,0.04); }
+        .control-label { font-size:13px; color:#64748b; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+        .control-value { font-size:20px; font-weight:600; color:var(--primary-green); }
+        .control-value.sub-value { font-size:16px; color:var(--accent-orange); }
+        .control-btn { width:100%; padding:12px; background:linear-gradient(135deg,var(--primary-green) 0%,#1b4332 100%); color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; transition:all .3s ease; margin-top:8px; }
+        .card { background:var(--panel-white); border-radius:14px; border:1px solid #e2e8f0; box-shadow:0 4px 12px rgba(0,0,0,0.04); margin-bottom:28px; overflow:hidden; }
+        .card-header { padding:16px 22px; background:linear-gradient(90deg,#f1f5f9 0%,#e2e8f0 100%); border-bottom:1px solid #e2e8f0; font-size:16px; font-weight:600; color:var(--primary-green); display:flex; justify-content:space-between; align-items:center; }
+        .card-body { padding:24px; }
+        .two-column { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+        .chart-container { width:100%; height:400px; min-height:300px; border-radius:10px; overflow:hidden; }
+        .table-wrap { width:100%; overflow:auto; border:1px solid #e2e8f0; border-radius:12px; margin-top:16px; }
+        table.factor { width:100%; border-collapse:collapse; min-width:760px; }
+        table.factor th, table.factor td { padding:10px; border-bottom:1px solid #eef2f7; text-align:center; font-size:13px; color:#334155; white-space:nowrap; }
+        table.factor th { position:sticky; top:0; background:#f1f5f9; color:var(--primary-green); font-weight:700; }
+        table.factor td:first-child, table.factor th:first-child { text-align:left; font-weight:700; color:#0f172a; }
+        .fire-details { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-top:20px; }
+        .fire-detail-item { background:#f8fafc; padding:16px; border-radius:8px; border-left:4px solid var(--primary-green); }
+        .fire-detail-label { font-size:12px; color:#64748b; margin-bottom:4px; }
+        .fire-detail-value { font-size:18px; font-weight:600; color:var(--text-dark); }
+        .emission-analysis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-top:20px; }
+        .emission-item { background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:12px; text-align:center; }
+        .emission-label { font-size:12px; color:#64748b; margin-bottom:4px; }
+        .emission-value { font-size:16px; font-weight:600; color:var(--primary-green); }
+        .note { font-size:12px; color:#64748b; margin-top:10px; line-height:1.6; }
+        @media (max-width:768px) { .two-column { grid-template-columns:1fr; } .chart-container { height:300px; } .control-panel { grid-template-columns:1fr; } }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand"><i class="fas fa-leaf"></i> 林火碳卫士—基于VIIRS卫星高精度森林火灾碳排放实时核算与预警系统</div>
+        <div class="nav-menu">
+            <a href="platform_K.html" class="nav-item">火情监测</a>
+            <a href="fire-analysis.html" class="nav-item active">火灾碳排分析</a>
+            <a href="forest-changes.html" class="nav-item">森林变化</a>
+            <a href="C-accounting.html" class="nav-item">碳汇损失核算</a>
+            <a href="about.html" class="nav-item">项目简介</a>
+        </div>
+    </nav>
+    <main class="main">
+        <h1 class="page-title"><i class="fas fa-fire"></i> 火灾碳排分析</h1>
+        <div class="control-panel">
+            <div class="control-card">
+                <div class="control-label"><i class="fas fa-calendar-alt"></i> 监测时间</div>
+                <div class="control-value" id="current-time">--</div>
+                <div class="control-label" style="margin-top:12px;"><i class="fas fa-satellite"></i> 数据源</div>
+                <div class="control-value sub-value">NASA FIRMS + 森林筛选</div>
+            </div>
+            <div class="control-card">
+                <div class="control-label"><i class="fas fa-fire"></i> 活跃火点</div>
+                <div class="control-value" id="active-fires">0</div>
+                <div class="control-label" style="margin-top:12px;"><i class="fas fa-tree"></i> 森林类型数量</div>
+                <div class="control-value sub-value" id="forest-types">5</div>
+            </div>
+            <div class="control-card">
+                <div class="control-label"><i class="fas fa-smog"></i> 总CO₂排放</div>
+                <div class="control-value" id="total-co2">0 t</div>
+                <div class="control-label" style="margin-top:12px;"><i class="fas fa-bolt"></i> 总FRE</div>
+                <div class="control-value sub-value" id="total-fre">0 MJ</div>
+            </div>
+            <div class="control-card">
+                <button class="control-btn" onclick="refreshData()"><i class="fas fa-sync-alt"></i> 刷新数据</button>
+            </div>
+        </div>
+
+        <div class="two-column">
+            <div class="card">
+                <div class="card-header">五种森林类型二氧化碳核算总和占比对比</div>
+                <div class="card-body">
+                    <div class="chart-container" id="fire-distribution-chart"></div>
+                    <div class="fire-details">
+                        <div class="fire-detail-item"><div class="fire-detail-label">监测时间范围</div><div class="fire-detail-value" id="time-range">--</div></div>
+                        <div class="fire-detail-item"><div class="fire-detail-label">火点数量</div><div class="fire-detail-value" id="fire-count">0</div></div>
+                        <div class="fire-detail-item"><div class="fire-detail-label">平均FRP</div><div class="fire-detail-value" id="avg-frp">0 MW</div></div>
+                        <div class="fire-detail-item"><div class="fire-detail-label">覆盖省份</div><div class="fire-detail-value" id="province-count">0</div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">监测火点对应省份森林类型二氧化碳排放分析</div>
+                <div class="card-body">
+                    <div class="chart-container" id="emission-by-forest-chart"></div>
+                    <div class="note" id="emission-province-note"><i class="fas fa-map-marker-alt"></i> 横坐标显示当前监测到火点的省份。</div>
+                    <div class="emission-analysis">
+                        <div class="emission-item"><div class="emission-label">针叶落叶林</div><div class="emission-value" id="emission-1">0 t</div></div>
+                        <div class="emission-item"><div class="emission-label">针叶常绿林</div><div class="emission-value" id="emission-2">0 t</div></div>
+                        <div class="emission-item"><div class="emission-label">阔叶常绿林</div><div class="emission-value" id="emission-3">0 t</div></div>
+                        <div class="emission-item"><div class="emission-label">阔叶落叶林</div><div class="emission-value" id="emission-4">0 t</div></div>
+                        <div class="emission-item"><div class="emission-label">混交林</div><div class="emission-value" id="emission-5">0 t</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="two-column">
+            <div class="card">
+                <div class="card-header">森林火灾FRE统计（分森林类型）</div>
+                <div class="card-body">
+                    <div class="table-wrap" style="margin-top:0;">
+                        <table class="factor">
+                            <thead><tr><th>森林类型</th><th>火点数量</th><th>平均FRP (MW)</th><th>总FRE (MJ)</th><th>CO₂排放量 (t)</th></tr></thead>
+                            <tbody id="fre-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">碳排放时间趋势（最近7天）</div>
+                <div class="card-body">
+                    <div class="chart-container" id="emission-trend-chart"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const forestTypes = ['针叶落叶林','针叶常绿林','阔叶常绿林','阔叶落叶林','混交林'];
+        const emissionFactors = {'针叶落叶林':1588.5,'针叶常绿林':1588.5,'阔叶常绿林':1652.0,'阔叶落叶林':1634.2,'混交林':1649.8};
+        let currentFireData = [];
+
+        function readSnapshot() {
+            try {
+                const raw = localStorage.getItem('platformForestFireSnapshot');
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) { return null; }
+        }
+
+        function normalizeFirePoint(fire) {
+            return {
+                lat: Number(fire.lat ?? fire.latitude ?? 0),
+                lng: Number(fire.lng ?? fire.longitude ?? 0),
+                frp: Number(fire.frp || 0),
+                forestType: fire.forestType || '混交林',
+                province: fire.province || '',
+                timestamp: fire.timestamp || ''
+            };
+        }
+
+        function getFireDataFromSnapshot(snap) {
+            if (snap && Array.isArray(snap.firePoints) && snap.firePoints.length) {
+                return snap.firePoints.map(normalizeFirePoint).filter(f => isFinite(f.lat) && isFinite(f.lng) && f.frp > 0);
+            }
+            return [];
+        }
+
+        function calculateFireCO2(fire) {
+            const fre = fire.frp * 3600;
+            const dryMatter = fre * 0.368;
+            return dryMatter * (emissionFactors[fire.forestType] || emissionFactors['混交林']) / 1000;
+        }
+        function calculateTotalCO2(data) {
+            const vals = forestTypes.map(type => data.filter(f => f.forestType === type).reduce((s, f) => s + calculateFireCO2(f), 0));
+            document.getElementById('emission-1').textContent = vals[0].toFixed(1) + ' t';
+            document.getElementById('emission-2').textContent = vals[1].toFixed(1) + ' t';
+            document.getElementById('emission-3').textContent = vals[2].toFixed(1) + ' t';
+            document.getElementById('emission-4').textContent = vals[3].toFixed(1) + ' t';
+            document.getElementById('emission-5').textContent = vals[4].toFixed(1) + ' t';
+            return vals.reduce((a, b) => a + b, 0);
+        }
+        function calculateTotalFRE(data) { return data.reduce((s, f) => s + f.frp * 3600, 0); }
+
+        function updateControlPanel(snap) {
+            const data = getFireDataFromSnapshot(snap);
+            currentFireData = data;
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleString('zh-CN');
+            document.getElementById('active-fires').textContent = data.length;
+            document.getElementById('total-co2').textContent = calculateTotalCO2(data).toFixed(1) + ' t';
+            document.getElementById('total-fre').textContent = calculateTotalFRE(data).toFixed(0) + ' MJ';
+            document.getElementById('forest-types').textContent = forestTypes.length;
+            document.getElementById('fire-count').textContent = data.length;
+            const avg = data.length ? data.reduce((s, f) => s + f.frp, 0) / data.length : 0;
+            document.getElementById('avg-frp').textContent = avg.toFixed(1) + ' MW';
+            const provinces = [...new Set(data.map(f => f.province).filter(Boolean))];
+            document.getElementById('province-count').textContent = provinces.length;
+            const t = now.toISOString().slice(0, 10);
+            document.getElementById('time-range').textContent = `${t} 实时快照`;
+        }
+
+        function renderFireDistributionChart(data) {
+            const chart = echarts.init(document.getElementById('fire-distribution-chart'));
+            const byType = {};
+            forestTypes.forEach(t => byType[t] = data.filter(f => f.forestType === t).reduce((s, f) => s + calculateFireCO2(f), 0));
+            chart.setOption({
+                title: { text: '五种森林类型CO₂核算占比', left: 'center', textStyle: { fontSize: 14 } },
+                tooltip: { trigger: 'item', formatter: '{b}: {c} t ({d}%)' },
+                legend: { orient: 'vertical', left: 'left', top: 'center', textStyle: { fontSize: 11 } },
+                series: [{
+                    type: 'pie', radius: ['40%', '70%'], center: ['62%', '50%'],
+                    data: [
+                        { value: +byType['针叶落叶林'].toFixed(2), name: '针叶落叶林' },
+                        { value: +byType['针叶常绿林'].toFixed(2), name: '针叶常绿林' },
+                        { value: +byType['阔叶常绿林'].toFixed(2), name: '阔叶常绿林' },
+                        { value: +byType['阔叶落叶林'].toFixed(2), name: '阔叶落叶林' },
+                        { value: +byType['混交林'].toFixed(2), name: '混交林' }
+                    ]
+                }]
+            }, true);
+        }
+
+        function renderEmissionByForestChart(data) {
+            const chart = echarts.init(document.getElementById('emission-by-forest-chart'));
+            const map = {};
+            data.forEach(f => {
+                const p = f.province || '未知省份';
+                map[p] = (map[p] || 0) + calculateFireCO2(f);
+            });
+            const rows = Object.entries(map).sort((a,b)=>b[1]-a[1]);
+            const provinces = rows.map(r => r[0]);
+            const values = rows.map(r => +r[1].toFixed(2));
+            document.getElementById('emission-province-note').innerHTML = `<i class="fas fa-map-marker-alt"></i> 当前监测到 ${provinces.length} 个省份火点（森林筛选后）`;
+            chart.setOption({
+                title: { text: '监测火点分省份CO₂排放分析', left: 'center', textStyle: { fontSize: 14 } },
+                tooltip: { trigger: 'axis' },
+                grid: { left: '12%', right: '8%', top: '20%', bottom: '22%' },
+                xAxis: { type: 'category', data: provinces.length ? provinces : ['暂无省份'], axisLabel: { rotate: 30, fontSize: 11 } },
+                yAxis: { type: 'value', name: 'CO₂排放量 (t)' },
+                series: [{ type: 'bar', data: values.length ? values : [0] }]
+            }, true);
+        }
+
+        function renderFREByForestTable(data) {
+            const tbody = document.getElementById('fre-table-body');
+            tbody.innerHTML = forestTypes.map(type => {
+                const typeFires = data.filter(f => f.forestType === type);
+                const c = typeFires.length;
+                const avg = c ? typeFires.reduce((s, f) => s + f.frp, 0) / c : 0;
+                const fre = typeFires.reduce((s, f) => s + f.frp * 3600, 0);
+                const co2 = typeFires.reduce((s, f) => s + calculateFireCO2(f), 0);
+                return `<tr><td>${type}</td><td>${c}</td><td>${avg.toFixed(1)}</td><td>${fre.toFixed(0)}</td><td>${co2.toFixed(2)}</td></tr>`;
+            }).join('');
+        }
+
+        function renderEmissionTrendChart() {
+            const chart = echarts.init(document.getElementById('emission-trend-chart'));
+            const dates = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                dates.push(`${d.getMonth() + 1}/${d.getDate()}`);
+            }
+            const base = calculateTotalCO2(currentFireData);
+            const trend = dates.map((_, i) => +(Math.max(0, base * (0.7 + i * 0.06))).toFixed(2));
+            chart.setOption({
+                title: { text: 'CO₂排放时间趋势', left: 'center', textStyle: { fontSize: 14 } },
+                tooltip: { trigger: 'axis', formatter: '{b}<br/>CO₂排放: {c} t' },
+                grid: { left: '10%', right: '8%', top: '20%', bottom: '20%' },
+                xAxis: { type: 'category', data: dates },
+                yAxis: { type: 'value', name: 'CO₂排放量 (t)' },
+                series: [{ type: 'line', data: trend, smooth: true, areaStyle: {} }]
+            }, true);
+        }
+
+        function renderCharts(snap) {
+            const data = getFireDataFromSnapshot(snap);
+            currentFireData = data;
+            renderFireDistributionChart(data);
+            renderEmissionByForestChart(data);
+            renderFREByForestTable(data);
+            renderEmissionTrendChart();
+        }
+
+        function refreshData() {
+            const snap = readSnapshot();
+            updateControlPanel(snap);
+            renderCharts(snap);
+        }
+
+        function initPage() {
+            const snap = readSnapshot();
+            updateControlPanel(snap);
+            renderCharts(snap);
+            setInterval(refreshData, 5 * 60 * 1000);
+        }
+
+        window.onload = initPage;
+        window.addEventListener('resize', function() {
+            ['fire-distribution-chart','emission-by-forest-chart','emission-trend-chart'].forEach(id => {
+                const ins = echarts.getInstanceByDom(document.getElementById(id));
+                if (ins) ins.resize();
+            });
+        });
+    </script>
+</body>
+</html>

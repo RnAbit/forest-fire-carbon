@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>帮助 · 林火碳卫兵</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: #ffffff;
+            color: #1a1a1a;
+            line-height: 1.5;
+        }
+
+        .header {
+            background: #ffffff;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 0.8rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+
+        .satellite-selector {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .satellite-selector select {
+            background: #f8f8f8;
+            border: 1px solid #cccccc;
+            border-radius: 40px;
+            padding: 0.5rem 2rem 0.5rem 1.5rem;
+            color: #1a1a1a;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 0.3rem;
+        }
+
+        .nav-button {
+            background: transparent;
+            border: none;
+            color: #4d4d4d;
+            padding: 0.5rem 1.8rem;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .nav-button:hover {
+            background: #f0f0f0;
+            color: #000000;
+            border-color: #b0b0b0;
+        }
+
+        .nav-button.active {
+            background: #1a1a1a;
+            color: #ffffff;
+            border-color: #1a1a1a;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 3rem auto;
+            padding: 0 2rem;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            font-weight: 500;
+            color: #000000;
+            letter-spacing: -0.5px;
+            margin-bottom: 2rem;
+        }
+
+        .faq-grid {
+            display: grid;
+            gap: 1.2rem;
+        }
+
+        .faq-item {
+            background: #fafafa;
+            border: 1px solid #e5e5e5;
+            border-radius: 40px;
+            padding: 1.5rem 2rem;
+            transition: box-shadow 0.2s;
+        }
+
+        .faq-item:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+            border-color: #b0b0b0;
+        }
+
+        .faq-question {
+            font-size: 1.3rem;
+            font-weight: 500;
+            color: #000000;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .faq-question::before {
+            content: "?";
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: #e0e0e0;
+            border-radius: 50%;
+            color: #1a1a1a;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .faq-answer {
+            color: #4d4d4d;
+            padding-left: 2.8rem;
+            font-size: 1rem;
+        }
+
+        .contact-section {
+            margin-top: 3rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            justify-content: center;
+        }
+
+        .contact-card {
+            background: #fafafa;
+            border: 1px solid #e5e5e5;
+            border-radius: 40px;
+            padding: 2rem 2.5rem;
+            text-align: center;
+            flex: 1 1 240px;
+        }
+
+        .contact-card h3 {
+            font-size: 1.4rem;
+            font-weight: 500;
+            color: #000000;
+            margin-bottom: 1rem;
+        }
+
+        .contact-card p {
+            color: #4d4d4d;
+            margin-bottom: 1.5rem;
+        }
+
+        .contact-btn {
+            display: inline-block;
+            background: #1a1a1a;
+            border: 1px solid #1a1a1a;
+            color: #ffffff;
+            padding: 0.7rem 2rem;
+            border-radius: 60px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .contact-btn:hover {
+            background: #333333;
+            border-color: #333333;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .footer-note {
+            margin-top: 4rem;
+            text-align: center;
+            color: #8c8c8c;
+            font-size: 0.9rem;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="satellite-selector">
+            <select id="satellite-select">
+                <option value="himawari" selected>葵花8号 · 实时</option>
+                <option value="modis">MODIS · 历史</option>
+                <option value="viire">VIIRS · 历史</option>
+            </select>
+            <div class="nav-buttons">
+                <button class="nav-button" onclick="window.location.href='platform_K.html'">地图</button>
+                <button class="nav-button" onclick="window.location.href='operation.html'">操作</button>
+                <button class="nav-button" onclick="window.location.href='about.html'">了解</button>
+                <button class="nav-button active" onclick="window.location.href='help.html'">帮助</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>帮助与支持</h1>
+
+        <div class="faq-grid">
+            <div class="faq-item">
+                <div class="faq-question">如何查看特定县的火点数据？</div>
+                <div class="faq-answer">地图页面点击“图层” → 勾选“行政区划”，然后点击地图上的县，或在上方搜索框输入县名。</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">火势预测的准确度如何？</div>
+                <div class="faq-answer">基于葵花8号实时火点 + 气象预报 + 碳密度，未来3小时火线预测准确率 >85%，6小时 >70%。</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">减排建议是怎么算出来的？</div>
+                <div class="faq-answer">系统比较不同扑救方向可避免的碳排放量（碳密度×过火概率），自动推荐效益最大的方案，并显示预估减排量。</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">数据多久更新？</div>
+                <div class="faq-answer">火点每10分钟更新；气象每小时；碳密度图每月校准。</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">如何共享预警给其他市县？</div>
+                <div class="faq-answer">在火点详情卡点击“协同预警”，选择受影响市县，生成简报后可一键邮件/下载。</div>
+            </div>
+        </div>
+
+        <div class="contact-section">
+            <div class="contact-card">
+                <h3>📧 邮件支持</h3>
+                <p>carbon-support@forestfire.cn<br>工作日 9:00-18:00</p>
+                <a href="mailto:carbon-support@forestfire.cn" class="contact-btn">发送邮件</a>
+            </div>
+            <div class="contact-card">
+                <h3>📞 应急热线</h3>
+                <p>400-123-911<br>24小时 火灾应急</p>
+                <a href="tel:400123911" class="contact-btn">立即拨打</a>
+            </div>
+            <div class="contact-card">
+                <h3>📄 用户手册</h3>
+                <p>PDF 详细操作指南<br>版本 v2.3 (2025.03)</p>
+                <a href="#" class="contact-btn">下载手册</a>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            * 紧急情况请优先拨打当地森林火警电话 12119
+        </div>
+    </div>
+</body>
+</html>

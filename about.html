@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>项目简介 | 林火碳卫士</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root { --primary-green: #2d6a4f; --bg-light: #f8fafc; --panel-white: #ffffff; --text-dark: #1e293b; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Microsoft YaHei", sans-serif; }
+        body { background: var(--bg-light); color: var(--text-dark); min-height: 100vh; display: flex; flex-direction: column; }
+        .navbar { height: 64px; background: linear-gradient(180deg,#fff 0%,#f8fafc 100%); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; border-bottom: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(45,106,79,0.08); flex-shrink: 0; }
+        .nav-brand { font-size: 16px; font-weight: 600; color: var(--primary-green); display: flex; align-items: center; gap: 10px; }
+        .nav-menu { display: flex; gap: 6px; }
+        .nav-item { padding: 10px 18px; border-radius: 10px; font-size: 14px; font-weight: 500; transition: all 0.25s ease; color: #64748b; text-decoration: none; }
+        .nav-item:hover { background: rgba(45,106,79,0.08); color: var(--primary-green); }
+        .nav-item.active { background: linear-gradient(135deg, var(--primary-green) 0%, #1b4332 100%); color: white; box-shadow: 0 2px 8px rgba(45,106,79,0.3); }
+        .main { flex: 1; max-width: 1200px; margin: 0 auto; padding: 32px 24px 40px; width: 100%; }
+        .page-title { font-size: 28px; font-weight: 700; color: var(--primary-green); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .subtitle { color: #64748b; margin-bottom: 24px; line-height: 1.7; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: var(--panel-white); border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        .stat-value { font-size: 24px; font-weight: 700; color: var(--primary-green); }
+        .stat-label { font-size: 13px; color: #64748b; margin-top: 6px; }
+        .section { background: var(--panel-white); border: 1px solid #e2e8f0; border-radius: 14px; padding: 24px; margin-bottom: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        .section h2 { color: var(--primary-green); font-size: 20px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .section p { color: #475569; line-height: 1.8; font-size: 14px; margin-bottom: 10px; }
+        .section ul { margin-left: 16px; color: #475569; }
+        .section li { margin-bottom: 8px; line-height: 1.7; font-size: 14px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .tag-wrap { margin-top: 8px; }
+        .tag { display: inline-block; background: rgba(45,106,79,0.1); color: var(--primary-green); border: 1px solid rgba(45,106,79,0.25); border-radius: 20px; padding: 5px 12px; margin: 0 6px 6px 0; font-size: 12px; }
+        .footer-note { margin-top: 28px; text-align: center; color: #94a3b8; font-size: 13px; border-top: 1px solid #e2e8f0; padding-top: 18px; }
+        @media (max-width: 980px) { .stats { grid-template-columns: repeat(2, 1fr); } .grid-2 { grid-template-columns: 1fr; } }
+        @media (max-width: 600px) { .stats { grid-template-columns: 1fr; } .navbar { padding: 0 12px; } .nav-item { padding: 8px 10px; font-size: 13px; } .nav-brand { display: none; } }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand"><i class="fas fa-leaf"></i> 林火碳卫士—基于VIIRS卫星高精度森林火灾碳排放实时核算与预警系统</div>
+        <div class="nav-menu">
+            <a href="platform_K.html" class="nav-item">火情监测</a>
+            <a href="fire-analysis.html" class="nav-item">火灾碳排分析</a>
+            <a href="forest-changes.html" class="nav-item">森林变化</a>
+            <a href="C-accounting.html" class="nav-item">碳汇损失核算</a>
+            <a href="about.html" class="nav-item active">项目简介</a>
+        </div>
+    </nav>
+    <main class="main">
+        <h1 class="page-title"><i class="fas fa-book-open"></i> 项目简介</h1>
+        <p class="subtitle">林火碳卫士——基于VIIRS卫星高精度森林火灾碳排放实时核算与预警系统设计说明</p>
+
+        <div class="stats">
+            <div class="stat-card"><div class="stat-value">375m</div><div class="stat-label">VIIRS火点分辨率</div></div>
+            <div class="stat-card"><div class="stat-value">10min</div><div class="stat-label">火点轮询更新周期</div></div>
+            <div class="stat-card"><div class="stat-value">&lt;10%</div><div class="stat-label">CO2反演估算误差</div></div>
+            <div class="stat-card"><div class="stat-value">省/市/县</div><div class="stat-label">多级下钻与预警</div></div>
+        </div>
+
+        <div class="section">
+            <h2><i class="fas fa-lightbulb"></i> 作品内容简介</h2>
+            <p>系统融合S-NPP VIIRS 375m高分辨率火点与NASA FIRMS实时数据，形成“数据获取—处理分析—可视化—预警推送”全链条流程，实现森林火灾实时监测、精准定位、分钟级预警与CO2动态核算。</p>
+            <p>围绕传统系统分辨率低、响应滞后、碳排核算缺失等痛点，项目通过森林火点筛选、森林类型识别、FRE积分与CO2反演，提供区县级可落地的应急与减排数据支撑。</p>
+            <div class="tag-wrap">
+                <span class="tag">火灾监测</span><span class="tag">实时预警</span><span class="tag">下钻交互</span><span class="tag">碳排放动态核算</span><span class="tag">碳减排</span>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="section" style="margin-bottom:0;">
+                <h2><i class="fas fa-bullseye"></i> 研制背景及意义</h2>
+                <ul>
+                    <li>提升应急响应能力：实现分钟级监测和三级预警，推动“被动扑救”向“主动发现、精准预警”转变。</li>
+                    <li>填补动态碳核算空白：基于FRP→FRE→CO2反演模型，支持区县级碳排放实时量化。</li>
+                    <li>降低基层应用门槛：依托免费卫星数据和轻量化网页架构，无需新增硬件投入。</li>
+                    <li>支撑双碳战略与生态价值转化：为碳收支评估、生态补偿、碳信用签发提供数据依据。</li>
+                </ul>
+            </div>
+            <div class="section" style="margin-bottom:0;">
+                <h2><i class="fas fa-sitemap"></i> 系统总体架构</h2>
+                <ul>
+                    <li><strong>数据收集模块：</strong>前端代理轮询抓取FIRMS CSV火点，解析位置、FRP、置信度和时间等字段。</li>
+                    <li><strong>数据处理模块：</strong>中国境内裁剪、空间匹配、辐射/几何校正、云掩膜剔除与森林类型识别。</li>
+                    <li><strong>算法反演模块：</strong>梯形积分计算FRE，结合干物质转换与森林类型排放因子核算CO2。</li>
+                    <li><strong>应用输出模块：</strong>地图可视化、分级预警、火点明细联动与跨模块专题分析。</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2><i class="fas fa-calculator"></i> 核心反演与技术关键</h2>
+            <ul>
+                <li>FRE计算：对离散FRP序列使用梯形积分法，得到火点辐射能量。</li>
+                <li>干物质估算：采用转换系数β=0.368 kg/MJ，计算干物质燃烧量。</li>
+                <li>CO2核算：按针叶落叶林、针叶常绿林、阔叶常绿林、阔叶落叶林、混交林五类动态匹配排放因子。</li>
+                <li>关键实现：ECharts多级下钻交互、Turf.js空间匹配、轮询容错代理与预警分级推送。</li>
+            </ul>
+        </div>
+
+        <div class="footer-note">© 2026 林火碳卫士——基于VIIRS卫星高精度森林火灾碳排放实时核算与预警系统</div>
+    </main>
+</body>
+</html>
