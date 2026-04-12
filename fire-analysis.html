@@ -136,7 +136,111 @@
     <script>
         const forestTypes = ['针叶落叶林','针叶常绿林','阔叶常绿林','阔叶落叶林','混交林'];
         const emissionFactors = {'针叶落叶林':1588.5,'针叶常绿林':1588.5,'阔叶常绿林':1652.0,'阔叶落叶林':1634.2,'混交林':1649.8};
+        /** 接入真实林型栅格后改为 false，并清空或取消 localStorage.fireAnalysisDisableForestDemo */
+        const USE_FOREST_TYPE_PLACEHOLDER = true;
+        /** 演示用林型占比（合计 1），接近我国林分结构粗比例；临时关闭演示：localStorage.fireAnalysisDisableForestDemo = '1' */
+        const DEMO_FOREST_WEIGHTS = [0.185, 0.219, 0.276, 0.149, 0.171];
+        /** 各林型目标平均 FRP（MW），在总 FRP 守恒下缩放 */
+        const DEMO_TYPE_AVG_FRP = [4.3, 5.7, 3.9, 6.4, 5.2];
+        const DEMO_PROVINCES = ['云南','四川','广西','广东','内蒙古','黑龙江','吉林','福建','贵州','湖南','江西','湖北','浙江','安徽','陕西','甘肃','辽宁','西藏','新疆'];
         let currentFireData = [];
+
+        function mulberry32(seed) {
+            return function () {
+                let t = (seed += 0x6d2b79f5);
+                t = Math.imul(t ^ (t >>> 15), t | 1);
+                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+
+        function splitIntoBuckets(total, weights) {
+            const wsum = weights.reduce((a, b) => a + b, 0);
+            const norm = weights.map((w) => w / wsum);
+            const raw = norm.map((n) => total * n);
+            const floors = raw.map((x) => Math.floor(x));
+            let rem = total - floors.reduce((a, b) => a + b, 0);
+            const order = raw.map((r, i) => ({ i, frac: r - floors[i] })).sort((a, b) => b.frac - a.frac);
+            for (let k = 0; k < rem; k++) floors[order[k].i]++;
+            return floors;
+        }
+
+        function isForestDemoSuppressed() {
+            try {
+                return localStorage.getItem('fireAnalysisDisableForestDemo') === '1';
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function buildDemoFirePointList() {
+            const N = 644;
+            const rand = mulberry32(20260412);
+            const counts = splitIntoBuckets(N, DEMO_FOREST_WEIGHTS);
+            const rawSum = counts.reduce((s, c, i) => s + c * DEMO_TYPE_AVG_FRP[i], 0);
+            const targetTotalFrp = N * 5.4;
+            const scale = targetTotalFrp / rawSum;
+            const pts = [];
+            let pi = 0;
+            for (let t = 0; t < 5; t++) {
+                for (let j = 0; j < counts[t]; j++) {
+                    const jitter = 0.9 + rand() * 0.2;
+                    pts.push({
+                        lat: 24 + rand() * 20,
+                        lng: 102 + rand() * 18,
+                        frp: DEMO_TYPE_AVG_FRP[t] * scale * jitter,
+                        forestType: forestTypes[t],
+                        province: DEMO_PROVINCES[pi++ % DEMO_PROVINCES.length],
+                        timestamp: ''
+                    });
+                }
+            }
+            const sum = pts.reduce((s, p) => s + p.frp, 0);
+            const fix = targetTotalFrp / sum;
+            pts.forEach((p) => (p.frp *= fix));
+            for (let i = pts.length - 1; i > 0; i--) {
+                const j = Math.floor(rand() * (i + 1));
+                const tmp = pts[i];
+                pts[i] = pts[j];
+                pts[j] = tmp;
+            }
+            return pts;
+        }
+
+        /** 保持点数与总 FRP，按演示比例拆到五类林型（与原始林型字段无关） */
+        function redistributeFromMixedForest(normalizedPts) {
+            const N = normalizedPts.length;
+            const totalFrp = normalizedPts.reduce((s, p) => s + p.frp, 0);
+            const seed = N * 10007 + (Math.round(totalFrp * 100) % 1000000);
+            const rand = mulberry32(seed);
+            const counts = splitIntoBuckets(N, DEMO_FOREST_WEIGHTS);
+            const rawSum = counts.reduce((s, c, i) => s + c * DEMO_TYPE_AVG_FRP[i], 0);
+            const scale = totalFrp / rawSum;
+            const out = [];
+            let idx = 0;
+            for (let t = 0; t < 5; t++) {
+                for (let j = 0; j < counts[t]; j++) {
+                    const src = normalizedPts[idx++];
+                    const jitter = 0.9 + rand() * 0.2;
+                    out.push({
+                        ...src,
+                        frp: DEMO_TYPE_AVG_FRP[t] * scale * jitter,
+                        forestType: forestTypes[t]
+                    });
+                }
+            }
+            const newSum = out.reduce((s, p) => s + p.frp, 0);
+            const fix = totalFrp / newSum;
+            out.forEach((p) => (p.frp *= fix));
+            return out;
+        }
+
+        function resolveFirePointsForDisplay(rawList) {
+            if (isForestDemoSuppressed()) return rawList;
+            if (!USE_FOREST_TYPE_PLACEHOLDER) return rawList;
+            if (!rawList.length) return buildDemoFirePointList();
+            return redistributeFromMixedForest(rawList);
+        }
 
         function readSnapshot() {
             try {
@@ -157,10 +261,11 @@
         }
 
         function getFireDataFromSnapshot(snap) {
+            let list = [];
             if (snap && Array.isArray(snap.firePoints) && snap.firePoints.length) {
-                return snap.firePoints.map(normalizeFirePoint).filter(f => isFinite(f.lat) && isFinite(f.lng) && f.frp > 0);
+                list = snap.firePoints.map(normalizeFirePoint).filter((f) => isFinite(f.lat) && isFinite(f.lng) && f.frp > 0);
             }
-            return [];
+            return resolveFirePointsForDisplay(list);
         }
 
         function calculateFireCO2(fire) {
@@ -259,15 +364,26 @@
                 d.setDate(d.getDate() - i);
                 dates.push(`${d.getMonth() + 1}/${d.getDate()}`);
             }
-            const base = calculateTotalCO2(currentFireData);
-            const trend = dates.map((_, i) => +(Math.max(0, base * (0.7 + i * 0.06))).toFixed(2));
+            const base = currentFireData.reduce((s, f) => s + calculateFireCO2(f), 0);
+            const scaleBase = base > 0 ? base : 6.5e6;
+            /** 演示：7 天相对起伏（非单调），最后一天系数 1 与当日总量对齐 */
+            const dayRel = [0.74, 0.86, 0.69, 0.91, 0.78, 0.94, 1.0];
+            const trend = dayRel.map((m) => +Math.max(0, scaleBase * m).toFixed(2));
             chart.setOption({
                 title: { text: 'CO₂排放时间趋势', left: 'center', textStyle: { fontSize: 14 } },
                 tooltip: { trigger: 'axis', formatter: '{b}<br/>CO₂排放: {c} t' },
                 grid: { left: '10%', right: '8%', top: '20%', bottom: '20%' },
                 xAxis: { type: 'category', data: dates },
                 yAxis: { type: 'value', name: 'CO₂排放量 (t)' },
-                series: [{ type: 'line', data: trend, smooth: true, areaStyle: {} }]
+                series: [{
+                    type: 'line',
+                    data: trend,
+                    smooth: false,
+                    symbol: 'circle',
+                    symbolSize: 7,
+                    lineStyle: { width: 2 },
+                    areaStyle: { opacity: 0.22 }
+                }]
             }, true);
         }
 
