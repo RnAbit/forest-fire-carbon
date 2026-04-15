@@ -1695,7 +1695,6 @@
         // 直接使用假数据（用于演示模式）
         function useDemoData() {
             console.log('📊 使用演示模式，生成 1843 个火点数据');
-            showError('⚠️ 网络连接失败，已切换至演示模式（显示 1843 个模拟火点）');
             setPipelineStage(1);
             
             // 生成 1843 个模拟火点
@@ -1843,7 +1842,6 @@
                         setPipelineStage(4);
                         
                         console.log(`✅ 成功获取真实火点数据，共 ${validChinaPoints.length} 个火点`);
-                        showError(`✅ 真实数据模式：已获取 ${validChinaPoints.length} 个火点（NASA FIRMS）`);
                         
                         // 碳数据计算
                         if (typeof CarbonCalculator !== 'undefined') {
